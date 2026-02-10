@@ -2,7 +2,9 @@ import React from "react"
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import '../styles/globals.css'
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/providers/theme-provider"
+import { QueryProvider } from "@/providers/query-provider"
+import { Toaster } from "@/components/ui/sonner"
 
 const _geist = Geist({ subsets: ['latin'] })
 const _geistMono = Geist_Mono({ subsets: ['latin'] })
@@ -21,7 +23,10 @@ export default function RootLayout({
 		<html lang="en" suppressHydrationWarning>
 			<body className="font-sans antialiased">
 				<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-					{children}
+					<QueryProvider>
+						{children}
+						<Toaster position="top-center"/>
+					</QueryProvider>
 				</ThemeProvider>
 			</body>
 		</html>

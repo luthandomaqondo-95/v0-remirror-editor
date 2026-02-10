@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRemirrorContext } from "@remirror/react";
-import type { AiEditPhase } from "./ai-edit-extension";
+import type { AiEditPhase } from "./extensions/ai-edit-extension";
 
 export interface AiEditController {
   /** Current phase of the AI edit */

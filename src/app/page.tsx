@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const DocumentEditor = dynamic(
   () =>
-    import("@/components/editor/document-editor").then(
+    import("@/components/editor-remirror/document-editor").then(
       (mod) => mod.DocumentEditor
     ),
   {

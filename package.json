@@ -41,6 +41,7 @@
     "@remirror/pm": "^3.0.0",
     "@remirror/react": "^3.0.1",
     "@remirror/react-ui": "^1.0.1",
+    "@tanstack/react-query": "^5.90.20",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
