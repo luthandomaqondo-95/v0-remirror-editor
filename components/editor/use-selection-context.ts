@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { useHelpers, useEditorState } from "@remirror/react";
+import { useCallback, useRef } from "react";
+import { useHelpers, useRemirrorContext } from "@remirror/react";
 
 export interface SelectionContext {
   /** Is there a non-empty selection? */
@@ -24,15 +24,31 @@ export interface SelectionContext {
   surroundingContext: string;
 }
 
-/**
- * Hook that captures the current editor selection and maps it to positions
- * in the full markdown output. Designed for passing to an AI chat component.
- */
-export function useSelectionContext(): SelectionContext {
-  const state = useEditorState({ update: true });
-  const helpers = useHelpers(true);
+const EMPTY_CONTEXT: SelectionContext = {
+  hasSelection: false,
+  from: 0,
+  to: 0,
+  selectedText: "",
+  selectedMarkdown: "",
+  fullMarkdown: "",
+  markdownFrom: -1,
+  markdownTo: -1,
+  surroundingContext: "",
+};
 
-  return useMemo(() => {
+/**
+ * Returns a function that captures the current editor selection on demand
+ * (e.g. on mouseup / keyboard selection end) instead of reactively on every
+ * state change.  This avoids interfering with the selection while the user
+ * is still dragging.
+ */
+export function useSelectionCapture() {
+  const { getState } = useRemirrorContext();
+  const helpers = useHelpers(true);
+  const lastCtx = useRef<SelectionContext>(EMPTY_CONTEXT);
+
+  const capture = useCallback((): SelectionContext => {
+    const state = getState();
     const { from, to, empty } = state.selection;
 
     let fullMarkdown = "";
@@ -43,17 +59,14 @@ export function useSelectionContext(): SelectionContext {
     }
 
     if (empty) {
-      return {
-        hasSelection: false,
+      const ctx: SelectionContext = {
+        ...EMPTY_CONTEXT,
         from,
         to,
-        selectedText: "",
-        selectedMarkdown: "",
         fullMarkdown,
-        markdownFrom: -1,
-        markdownTo: -1,
-        surroundingContext: "",
       };
+      lastCtx.current = ctx;
+      return ctx;
     }
 
     // Get plain text of the selection
@@ -109,7 +122,6 @@ export function useSelectionContext(): SelectionContext {
     let endCtx = allLines.length;
 
     if (markdownFrom >= 0) {
-      // Find the line index of markdownFrom
       let charCount = 0;
       for (let i = 0; i < allLines.length; i++) {
         if (charCount >= markdownFrom) {
@@ -130,7 +142,7 @@ export function useSelectionContext(): SelectionContext {
 
     const surroundingContext = allLines.slice(startCtx, endCtx).join("\n");
 
-    return {
+    const ctx: SelectionContext = {
       hasSelection: true,
       from,
       to,
@@ -141,5 +153,9 @@ export function useSelectionContext(): SelectionContext {
       markdownTo,
       surroundingContext,
     };
-  }, [state, helpers]);
+    lastCtx.current = ctx;
+    return ctx;
+  }, [getState, helpers]);
+
+  return { capture, lastCtx };
 }

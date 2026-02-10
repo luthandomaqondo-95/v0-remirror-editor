@@ -3,80 +3,149 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRemirrorContext } from "@remirror/react";
 import { Sparkles, Send, X } from "lucide-react";
-import { useSelectionContext } from "./use-selection-context";
+import {
+  useSelectionCapture,
+  type SelectionContext,
+} from "./use-selection-context";
 
 /**
  * A floating popup that appears just above the selected text in the editor.
  * Contains an input field for future inline AI edits.
- * Currently captures selection context for passing to AI.
+ * Selection is only captured on mouseup / keyup so the cursor never jumps
+ * while the user is still dragging.
  */
 export function InlineAIPopup() {
   const { view } = useRemirrorContext();
-  const selectionCtx = useSelectionContext();
-  const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
+  const { capture } = useSelectionCapture();
+  const [selectionCtx, setSelectionCtx] = useState<SelectionContext | null>(
+    null,
+  );
+  const [popupPos, setPopupPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [dismissed, setDismissed] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dismissedSelectionRef = useRef<string>("");
 
-  // Calculate popup position based on selection coordinates
-  useEffect(() => {
-    if (!selectionCtx.hasSelection) {
-      setPopupPos(null);
-      setDismissed(false);
-      dismissedSelectionRef.current = "";
-      return;
-    }
-
-    // If user dismissed this particular selection, don't show again
-    if (dismissed && dismissedSelectionRef.current === selectionCtx.selectedText) {
-      return;
-    }
-
-    // Reset dismissed state if selection changed
-    if (dismissedSelectionRef.current !== selectionCtx.selectedText) {
-      setDismissed(false);
-      dismissedSelectionRef.current = "";
-    }
-
-    try {
-      const { state } = view;
-      const { from } = state.selection;
-      const coords = view.coordsAtPos(from);
-      const editorRect = view.dom.closest(".overflow-auto")?.getBoundingClientRect();
-
-      if (coords && editorRect) {
-        setPopupPos({
-          top: coords.top - editorRect.top - 52, // above the selection
-          left: Math.max(8, coords.left - editorRect.left),
-        });
+  // Position the popup for a given selection context
+  const positionPopup = useCallback(
+    (ctx: SelectionContext) => {
+      if (!ctx.hasSelection) {
+        setPopupPos(null);
+        return;
       }
-    } catch {
-      setPopupPos(null);
-    }
-  }, [selectionCtx, view, dismissed]);
+      try {
+        const coords = view.coordsAtPos(ctx.from);
+        const editorRect = view.dom
+          .closest(".overflow-auto")
+          ?.getBoundingClientRect();
 
-  // Focus input when popup appears
+        if (coords && editorRect) {
+          setPopupPos({
+            top: coords.top - editorRect.top - 52,
+            left: Math.max(8, coords.left - editorRect.left),
+          });
+        }
+      } catch {
+        setPopupPos(null);
+      }
+    },
+    [view],
+  );
+
+  // Capture selection on mouseup and keyup (Shift+Arrow selections)
   useEffect(() => {
-    if (popupPos && inputRef.current && !dismissed) {
-      // small delay to avoid stealing focus from the selection
-      const timer = setTimeout(() => inputRef.current?.focus(), 150);
+    const editorDom = view.dom;
+
+    const handleSelectionEnd = () => {
+      // Use requestAnimationFrame to let the browser finalize the selection
+      requestAnimationFrame(() => {
+        const ctx = capture();
+
+        if (!ctx.hasSelection) {
+          setSelectionCtx(null);
+          setPopupPos(null);
+          setDismissed(false);
+          dismissedSelectionRef.current = "";
+          return;
+        }
+
+        // If user dismissed this particular selection, don't re-show
+        if (
+          dismissed &&
+          dismissedSelectionRef.current === ctx.selectedText
+        ) {
+          return;
+        }
+
+        // If selection changed, reset dismissed state
+        if (dismissedSelectionRef.current !== ctx.selectedText) {
+          setDismissed(false);
+          dismissedSelectionRef.current = "";
+        }
+
+        setSelectionCtx(ctx);
+        positionPopup(ctx);
+      });
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // Only trigger on shift+arrow or other selection-related keys
+      if (e.shiftKey || e.key === "Escape") {
+        handleSelectionEnd();
+      }
+    };
+
+    editorDom.addEventListener("mouseup", handleSelectionEnd);
+    editorDom.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      editorDom.removeEventListener("mouseup", handleSelectionEnd);
+      editorDom.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [view, capture, positionPopup, dismissed]);
+
+  // Clear popup when clicking in the editor collapses the selection
+  useEffect(() => {
+    const handleDocClick = (e: MouseEvent) => {
+      // If clicking inside the popup itself, don't clear
+      if (popupRef.current?.contains(e.target as Node)) return;
+
+      // After a click that isn't a selection, check if selection collapsed
+      requestAnimationFrame(() => {
+        const ctx = capture();
+        if (!ctx.hasSelection) {
+          setSelectionCtx(null);
+          setPopupPos(null);
+          setDismissed(false);
+          dismissedSelectionRef.current = "";
+        }
+      });
+    };
+
+    document.addEventListener("mousedown", handleDocClick);
+    return () => document.removeEventListener("mousedown", handleDocClick);
+  }, [capture]);
+
+  // Focus input when popup first appears (not during drag)
+  useEffect(() => {
+    if (popupPos && selectionCtx?.hasSelection && inputRef.current && !dismissed) {
+      const timer = setTimeout(() => inputRef.current?.focus(), 100);
       return () => clearTimeout(timer);
     }
-  }, [popupPos, dismissed]);
+  }, [popupPos, selectionCtx?.hasSelection, dismissed]);
 
   const handleSubmit = useCallback(() => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || !selectionCtx) return;
 
-    // This is the callback point where you would pass to AI chat.
-    // For now we log the context for integration.
     console.log("Inline AI edit request:", {
       prompt: inputValue,
       selection: selectionCtx,
     });
 
-    // Dispatch a custom event that the ChatPanel can listen to
     window.dispatchEvent(
       new CustomEvent("editor-ai-request", {
         detail: {
@@ -93,10 +162,12 @@ export function InlineAIPopup() {
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
-    dismissedSelectionRef.current = selectionCtx.selectedText;
+    if (selectionCtx) {
+      dismissedSelectionRef.current = selectionCtx.selectedText;
+    }
   }, [selectionCtx]);
 
-  if (!selectionCtx.hasSelection || !popupPos || dismissed) return null;
+  if (!selectionCtx?.hasSelection || !popupPos || dismissed) return null;
 
   return (
     <div

@@ -2,7 +2,10 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Sparkles, Copy, Check, FileCode2 } from "lucide-react";
-import { useSelectionContext } from "./use-selection-context";
+import {
+  useSelectionCapture,
+  type SelectionContext,
+} from "./use-selection-context";
 
 interface ChatMessage {
   id: string;
@@ -22,12 +25,32 @@ interface ChatMessage {
  * Below is a chat message list and an input to interact with AI.
  */
 export function ChatPanel() {
-  const selectionCtx = useSelectionContext();
+  const { capture } = useSelectionCapture();
+  const [selectionCtx, setSelectionCtx] = useState<SelectionContext | null>(
+    null,
+  );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Capture selection on mouseup so the chat panel stays in sync
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      requestAnimationFrame(() => {
+        const ctx = capture();
+        setSelectionCtx(ctx.hasSelection ? ctx : null);
+      });
+    };
+
+    document.addEventListener("mouseup", handleSelectionChange);
+    document.addEventListener("keyup", handleSelectionChange);
+    return () => {
+      document.removeEventListener("mouseup", handleSelectionChange);
+      document.removeEventListener("keyup", handleSelectionChange);
+    };
+  }, [capture]);
 
   // Listen for inline AI popup events
   useEffect(() => {
@@ -76,7 +99,7 @@ export function ChatPanel() {
       id: Date.now().toString(),
       role: "user",
       content: text,
-      selectionContext: selectionCtx.hasSelection
+      selectionContext: selectionCtx?.hasSelection
         ? {
             selectedMarkdown: selectionCtx.selectedMarkdown,
             markdownFrom: selectionCtx.markdownFrom,
@@ -95,7 +118,7 @@ export function ChatPanel() {
         {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: selectionCtx.hasSelection
+          content: selectionCtx?.hasSelection
             ? `Noted. I see you've selected text at markdown positions ${selectionCtx.markdownFrom}-${selectionCtx.markdownTo}. AI processing will be connected here.`
             : "I can help you edit the document. Select some text first for targeted edits, or ask me anything about the content.",
         },
@@ -120,7 +143,7 @@ export function ChatPanel() {
       </div>
 
       {/* Selection context preview (Cursor-style) */}
-      {selectionCtx.hasSelection && (
+      {selectionCtx?.hasSelection && (
         <div className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
           <div className="flex items-center gap-2 px-3 py-2">
             <FileCode2
@@ -222,7 +245,7 @@ export function ChatPanel() {
               }
             }}
             placeholder={
-              selectionCtx.hasSelection
+              selectionCtx?.hasSelection
                 ? "Ask AI about the selection..."
                 : "Ask AI about the document..."
             }
@@ -238,7 +261,7 @@ export function ChatPanel() {
             <Send size={13} />
           </button>
         </div>
-        {selectionCtx.hasSelection && (
+        {selectionCtx?.hasSelection && (
           <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1.5 px-1">
             Context attached: {selectionCtx.selectedText.slice(0, 50)}
             {selectionCtx.selectedText.length > 50 ? "..." : ""}
