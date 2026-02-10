@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import { Remirror, useRemirror } from "@remirror/react";
+import { EditorComponent, Remirror, useRemirror } from "@remirror/react";
 import {
   BoldExtension,
   ItalicExtension,
@@ -37,7 +37,7 @@ This is a **rich text editor** built with _Remirror_ and the Markdown extension.
 
 ## Features
 
-You can use the toolbar above or markdown shortcuts to format your content:
+You can use the toolbar above to format your content:
 
 - **Bold** text with \`Ctrl+B\`
 - *Italic* text with \`Ctrl+I\`
@@ -61,36 +61,10 @@ You can use the toolbar above or markdown shortcuts to format your content:
 Select any text and check the **Markdown Output** panel on the right to see the markdown representation of your selection.
 `;
 
-/**
- * All children of <Remirror> share the editor context.
- * Toolbar + Markdown panel both live here as context consumers.
- * The actual editable area is auto-rendered by Remirror via autoRender.
- */
-function EditorChildren({ showPanel }: { showPanel: boolean }) {
-  return (
-    <>
-      {/* Toolbar sits above the auto-rendered editor area */}
-      <EditorToolbar />
-
-      {/* We use a portal-style approach: the markdown panel is an absolutely
-          positioned overlay on the right side, so it visually sits beside
-          the editor but is still a child of the Remirror context. */}
-      {showPanel && (
-        <div
-          className="hidden lg:flex fixed right-0 top-[calc(49px+1px)] bottom-0 w-[360px] z-10"
-          style={{ pointerEvents: "auto" }}
-        >
-          <MarkdownSelectionPanel />
-        </div>
-      )}
-    </>
-  );
-}
-
 export function DocumentEditor() {
   const [showPanel, setShowPanel] = useState(true);
 
-  const { manager, state, onChange } = useRemirror({
+  const { manager, state } = useRemirror({
     extensions: () => [
       new MarkdownExtension({ copyAsMarkdown: false }),
       new BoldExtension(),
@@ -115,6 +89,7 @@ export function DocumentEditor() {
       new StrikeExtension(),
     ],
     content: INITIAL_MARKDOWN,
+    selection: "start",
     stringHandler: "markdown",
   });
 
@@ -158,26 +133,26 @@ export function DocumentEditor() {
         </button>
       </header>
 
-      {/* Single Remirror instance - autoRender places the editor after children */}
-      <div
-        className={`remirror-theme flex-1 overflow-hidden ${
-          showPanel ? "lg:mr-[360px]" : ""
-        }`}
-      >
-        <Remirror
-          manager={manager}
-          initialContent={state}
-          onChange={onChange}
-          autoRender="end"
-          classNames={[
-            "remirror-editor-wrapper",
-            "h-full",
-            "flex",
-            "flex-col",
-          ]}
-        >
-          <EditorChildren showPanel={showPanel} />
-        </Remirror>
+      {/* Editor area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main editor */}
+        <div className="flex-1 min-w-0 flex flex-col remirror-theme">
+          <Remirror manager={manager} initialContent={state}>
+            <EditorToolbar />
+            <div className="flex-1 overflow-auto bg-[hsl(var(--editor-surface))]">
+              <div className="max-w-4xl mx-auto px-8 py-6">
+                <EditorComponent />
+              </div>
+            </div>
+
+            {/* Markdown Panel -- still inside Remirror context so hooks work */}
+            {showPanel && (
+              <div className="hidden lg:block fixed right-0 top-[57px] bottom-0 w-[360px] z-10">
+                <MarkdownSelectionPanel />
+              </div>
+            )}
+          </Remirror>
+        </div>
       </div>
     </div>
   );

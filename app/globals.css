@@ -59,26 +59,13 @@
 }
 
 /* Remirror editor overrides */
-.remirror-editor-wrapper {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
 .remirror-editor {
   outline: none !important;
   box-shadow: none !important;
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.5rem 2rem;
-  max-width: 56rem;
-  margin: 0 auto;
-  width: 100%;
   min-height: 400px;
   font-size: 16px;
   line-height: 1.7;
   color: hsl(var(--foreground));
-  background: hsl(var(--editor-surface));
   caret-color: hsl(var(--primary));
 }
 
