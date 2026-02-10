@@ -2,9 +2,9 @@
 
 import React, { useCallback, useState } from "react";
 import {
-  EditorComponent,
   Remirror,
   useRemirror,
+  useRemirrorContext,
 } from "@remirror/react";
 import {
   BoldExtension,
@@ -64,6 +64,46 @@ You can use the toolbar above or markdown shortcuts to format your content:
 
 Select any text and check the **Markdown Output** panel on the right to see the markdown representation of your selection.
 `;
+
+/**
+ * The actual editable area. Uses useRemirrorContext to get
+ * getRootProps and attaches it to exactly ONE div.
+ */
+function EditorArea() {
+  const { getRootProps } = useRemirrorContext();
+
+  return (
+    <div className="flex-1 overflow-auto bg-[hsl(var(--editor-surface))]">
+      <div className="max-w-4xl mx-auto px-8 py-6">
+        <div {...getRootProps()} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Inner layout rendered inside the Remirror context provider.
+ * This component and its children can access useRemirrorContext,
+ * useHelpers, useCommands, etc.
+ */
+function EditorInner({ showPanel }: { showPanel: boolean }) {
+  return (
+    <div className="flex flex-1 overflow-hidden">
+      {/* Main editor column */}
+      <div className="flex flex-col flex-1 min-w-0">
+        <EditorToolbar />
+        <EditorArea />
+      </div>
+
+      {/* Markdown Panel */}
+      {showPanel && (
+        <div className="hidden lg:flex lg:w-[360px] lg:flex-shrink-0">
+          <MarkdownSelectionPanel />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function DocumentEditor() {
   const [showPanel, setShowPanel] = useState(true);
@@ -136,31 +176,15 @@ export function DocumentEditor() {
         </button>
       </header>
 
-      {/* Editor area - wrapped in remirror-theme for CSS variables */}
+      {/* Editor area */}
       <div className="remirror-theme flex-1 flex flex-col overflow-hidden">
         <Remirror
           manager={manager}
           initialContent={state}
           onChange={onChange}
+          autoRender={false}
         >
-          <div className="flex flex-1 overflow-hidden">
-            {/* Main editor column */}
-            <div className="flex flex-col flex-1 min-w-0">
-              <EditorToolbar />
-              <div className="flex-1 overflow-auto bg-[hsl(var(--editor-surface))]">
-                <div className="max-w-4xl mx-auto px-8 py-6">
-                  <EditorComponent />
-                </div>
-              </div>
-            </div>
-
-            {/* Markdown Panel */}
-            {showPanel && (
-              <div className="hidden lg:flex lg:w-[360px] lg:flex-shrink-0">
-                <MarkdownSelectionPanel />
-              </div>
-            )}
-          </div>
+          <EditorInner showPanel={showPanel} />
         </Remirror>
       </div>
     </div>
