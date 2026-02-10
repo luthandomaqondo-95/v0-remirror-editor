@@ -1,11 +1,12 @@
 import type { Config } from 'tailwindcss'
+import plugin from 'tailwindcss/plugin';
 
 const config: Config = {
   darkMode: ['class'],
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
+		"./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+		"./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+		"./src/app/**/*.{js,ts,jsx,tsx,mdx}",
     '*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
@@ -89,8 +90,47 @@ const config: Config = {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
+
+      // // You can define custom colors here to use in the plugin
+      // remirror: {
+      //   placeholder: '#9ca3af',
+      //   border: '#e5e7eb',
+      // }
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [
+    require('tailwindcss-animate'),
+    require('@tailwindcss/typography'),
+    // plugin(function({ addComponents, theme }) {
+    //   addComponents({
+    //     /* Targets the main editor container */
+    //     '.remirror-editor': {
+    //       border: `1px solid ${theme('colors.slate.200')}`,
+    //       borderRadius: theme('borderRadius.md'),
+    //       padding: theme('spacing.4'),
+    //       '&:focus': {
+    //         outline: 'none',
+    //         ring: `2px solid ${theme('colors.blue.500')}`,
+    //       },
+    //     },
+    //     /* Specific state: Empty/Placeholder */
+    //     '.remirror-is-empty:first-child::before': {
+    //       content: 'attr(data-placeholder)',
+    //       color: theme('colors.gray.400'),
+    //       float: 'left',
+    //       pointerEvents: 'none',
+    //       height: '0',
+    //       fontStyle: 'italic',
+    //     },
+    //     /* Styling the floating/bubble menus */
+    //     '.remirror-floating-menu': {
+    //       backgroundColor: theme('colors.white'),
+    //       boxShadow: theme('boxShadow.lg'),
+    //       border: `1px solid ${theme('colors.gray.100')}`,
+    //       padding: theme('spacing.1'),
+    //     }
+    //   })
+    // }),
+  ],
 }
 export default config
