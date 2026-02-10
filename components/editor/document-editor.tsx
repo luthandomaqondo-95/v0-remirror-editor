@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import {
-  Remirror,
-  useRemirror,
-  useRemirrorContext,
-} from "@remirror/react";
+import { Remirror, useRemirror } from "@remirror/react";
 import {
   BoldExtension,
   ItalicExtension,
@@ -66,42 +62,28 @@ Select any text and check the **Markdown Output** panel on the right to see the 
 `;
 
 /**
- * The actual editable area. Uses useRemirrorContext to get
- * getRootProps and attaches it to exactly ONE div.
+ * All children of <Remirror> share the editor context.
+ * Toolbar + Markdown panel both live here as context consumers.
+ * The actual editable area is auto-rendered by Remirror via autoRender.
  */
-function EditorArea() {
-  const { getRootProps } = useRemirrorContext();
-
+function EditorChildren({ showPanel }: { showPanel: boolean }) {
   return (
-    <div className="flex-1 overflow-auto bg-[hsl(var(--editor-surface))]">
-      <div className="max-w-4xl mx-auto px-8 py-6">
-        <div {...getRootProps()} />
-      </div>
-    </div>
-  );
-}
+    <>
+      {/* Toolbar sits above the auto-rendered editor area */}
+      <EditorToolbar />
 
-/**
- * Inner layout rendered inside the Remirror context provider.
- * This component and its children can access useRemirrorContext,
- * useHelpers, useCommands, etc.
- */
-function EditorInner({ showPanel }: { showPanel: boolean }) {
-  return (
-    <div className="flex flex-1 overflow-hidden">
-      {/* Main editor column */}
-      <div className="flex flex-col flex-1 min-w-0">
-        <EditorToolbar />
-        <EditorArea />
-      </div>
-
-      {/* Markdown Panel */}
+      {/* We use a portal-style approach: the markdown panel is an absolutely
+          positioned overlay on the right side, so it visually sits beside
+          the editor but is still a child of the Remirror context. */}
       {showPanel && (
-        <div className="hidden lg:flex lg:w-[360px] lg:flex-shrink-0">
+        <div
+          className="hidden lg:flex fixed right-0 top-[calc(49px+1px)] bottom-0 w-[360px] z-10"
+          style={{ pointerEvents: "auto" }}
+        >
           <MarkdownSelectionPanel />
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -176,15 +158,25 @@ export function DocumentEditor() {
         </button>
       </header>
 
-      {/* Editor area */}
-      <div className="remirror-theme flex-1 flex flex-col overflow-hidden">
+      {/* Single Remirror instance - autoRender places the editor after children */}
+      <div
+        className={`remirror-theme flex-1 overflow-hidden ${
+          showPanel ? "lg:mr-[360px]" : ""
+        }`}
+      >
         <Remirror
           manager={manager}
           initialContent={state}
           onChange={onChange}
-          autoRender={false}
+          autoRender="end"
+          classNames={[
+            "remirror-editor-wrapper",
+            "h-full",
+            "flex",
+            "flex-col",
+          ]}
         >
-          <EditorInner showPanel={showPanel} />
+          <EditorChildren showPanel={showPanel} />
         </Remirror>
       </div>
     </div>
