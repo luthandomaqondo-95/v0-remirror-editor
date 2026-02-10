@@ -33,6 +33,7 @@ import { EditorToolbar } from "./editor-toolbar";
 import { TableContextMenu } from "./table-context-menu";
 import { InlineAIPopup } from "./inline-ai-popup";
 import { ChatPanel } from "./chat-panel";
+import { AiEditExtension } from "./ai-edit-extension";
 import { PanelLeft, PanelLeftClose } from "lucide-react";
 
 import "remirror/styles/all.css";
@@ -1299,6 +1300,7 @@ export function DocumentEditor() {
       new SupExtension(),
       new TextHighlightExtension(),
       new TextColorExtension(),
+      new AiEditExtension(),
     ],
     content: defaultContent,
     selection: "start",

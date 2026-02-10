@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Sparkles, Copy, Check, FileCode2 } from "lucide-react";
+import { Send, Sparkles, Copy, Check, FileCode2, Loader2 } from "lucide-react";
 import {
   useSelectionCapture,
   type SelectionContext,
 } from "./use-selection-context";
+import { useAiEdit } from "./use-ai-edit";
 
 interface ChatMessage {
   id: string;
@@ -26,6 +27,7 @@ interface ChatMessage {
  */
 export function ChatPanel() {
   const { capture } = useSelectionCapture();
+  const aiEdit = useAiEdit();
   const [selectionCtx, setSelectionCtx] = useState<SelectionContext | null>(
     null,
   );
@@ -111,20 +113,41 @@ export function ChatPanel() {
     setMessages((prev) => [...prev, msg]);
     setInputValue("");
 
-    // Placeholder assistant response
-    setTimeout(() => {
+    if (selectionCtx?.hasSelection) {
+      // Trigger the streaming AI edit on the selected range
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: selectionCtx?.hasSelection
-            ? `Noted. I see you've selected text at markdown positions ${selectionCtx.markdownFrom}-${selectionCtx.markdownTo}. AI processing will be connected here.`
-            : "I can help you edit the document. Select some text first for targeted edits, or ask me anything about the content.",
+          content: "Applying AI edit to the selected text...",
         },
       ]);
-    }, 500);
-  }, [inputValue, selectionCtx]);
+      aiEdit.startEdit(selectionCtx.from, selectionCtx.to).then(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 2).toString(),
+            role: "assistant",
+            content: "Done! The selected text has been updated.",
+          },
+        ]);
+      });
+    } else {
+      // No selection -- just a general chat response
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content:
+              "I can help you edit the document. Select some text first for targeted edits, or ask me anything about the content.",
+          },
+        ]);
+      }, 500);
+    }
+  }, [inputValue, selectionCtx, aiEdit]);
 
   const handleCopy = useCallback(async (id: string, content: string) => {
     await navigator.clipboard.writeText(content);
@@ -222,9 +245,20 @@ export function ChatPanel() {
                 <span className="text-[11px] font-medium text-[hsl(var(--muted-foreground))]">
                   Selected text
                 </span>
-                <span className="text-[10px] text-[hsl(var(--muted-foreground))] ml-auto tabular-nums">
-                  {selectionCtx.selectedText.length} chars
-                </span>
+                {aiEdit.phase !== "idle" ? (
+                  <span className="flex items-center gap-1 text-[10px] text-[hsl(var(--primary))] ml-auto">
+                    <Loader2 size={10} className="animate-spin" />
+                    {aiEdit.phase === "highlight"
+                      ? "Preparing..."
+                      : aiEdit.phase === "streaming"
+                        ? "Editing..."
+                        : "Done"}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-[hsl(var(--muted-foreground))] ml-auto tabular-nums">
+                    {selectionCtx.selectedText.length} chars
+                  </span>
+                )}
               </div>
               <div className="max-h-[100px] overflow-auto">
                 <pre className="text-xs font-mono leading-relaxed text-[hsl(var(--foreground))] whitespace-pre-wrap break-words px-3 py-2">
@@ -259,10 +293,14 @@ export function ChatPanel() {
             <button
               type="button"
               onClick={handleSend}
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || aiEdit.phase !== "idle"}
               className="flex items-center justify-center w-7 h-7 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
             >
-              <Send size={13} />
+              {aiEdit.phase !== "idle" ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Send size={13} />
+              )}
             </button>
           </div>
         </div>

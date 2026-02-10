@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRemirrorContext } from "@remirror/react";
-import { Sparkles, Send, X } from "lucide-react";
+import { Sparkles, Send, X, Loader2 } from "lucide-react";
 import {
   useSelectionCapture,
   type SelectionContext,
 } from "./use-selection-context";
+import { useAiEdit } from "./use-ai-edit";
 
 /**
  * Inline floating popup that appears directly above the user's text selection.
@@ -17,6 +18,7 @@ import {
 export function InlineAIPopup() {
   const { view } = useRemirrorContext();
   const { capture } = useSelectionCapture();
+  const aiEdit = useAiEdit();
   const [selectionCtx, setSelectionCtx] = useState<SelectionContext | null>(
     null,
   );
@@ -144,10 +146,14 @@ export function InlineAIPopup() {
   const handleSubmit = useCallback(() => {
     if (!inputValue.trim() || !selectionCtx) return;
 
+    const { from, to } = selectionCtx;
+    const prompt = inputValue.trim();
+
+    // Dispatch event for the chat panel to track
     window.dispatchEvent(
       new CustomEvent("editor-ai-request", {
         detail: {
-          prompt: inputValue,
+          prompt,
           selection: selectionCtx,
         },
       }),
@@ -156,7 +162,10 @@ export function InlineAIPopup() {
     setInputValue("");
     setDismissed(true);
     dismissedSelectionRef.current = selectionCtx.selectedText;
-  }, [inputValue, selectionCtx]);
+
+    // Trigger the streaming AI edit on the selected range
+    aiEdit.startEdit(from, to);
+  }, [inputValue, selectionCtx, aiEdit]);
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
@@ -202,10 +211,14 @@ export function InlineAIPopup() {
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={!inputValue.trim()}
+          disabled={!inputValue.trim() || aiEdit.phase !== "idle"}
           className="flex items-center justify-center w-6 h-6 rounded-md text-[hsl(var(--primary))] hover:bg-[hsl(var(--muted))] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <Send size={12} />
+          {aiEdit.phase !== "idle" ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <Send size={12} />
+          )}
         </button>
         <button
           type="button"
