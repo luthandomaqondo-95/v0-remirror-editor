@@ -69,66 +69,61 @@ export function useSelectionCapture() {
       return ctx;
     }
 
-    // Get plain text of the selection
+    // --- Exact selected text from ProseMirror document ---
     const selectedText = state.doc.textBetween(from, to, "\n", "\n");
 
-    // Map selected text to markdown position
-    const selectedLines = selectedText
-      .split("\n")
-      .filter((l) => l.trim());
-    const mdLines = fullMarkdown.split("\n");
+    // Use the exact text extracted from ProseMirror as the markdown
+    // representation. This is always accurate because textBetween extracts
+    // character-by-character from the document structure.
+    const selectedMarkdown = selectedText;
 
-    let selectedMarkdown = "";
+    // --- Map to approximate markdown positions ---
+    // Use a simple indexOf approach on the full markdown with the selected
+    // text. To avoid false positives on very short strings, only attempt
+    // mapping for selections longer than 8 characters.
     let markdownFrom = -1;
     let markdownTo = -1;
 
-    if (selectedLines.length > 0) {
-      const firstLine = selectedLines[0].trim();
-      const lastLine = selectedLines[selectedLines.length - 1].trim();
-
-      let startLineIdx = -1;
-      let endLineIdx = -1;
-
-      for (let i = 0; i < mdLines.length; i++) {
-        if (startLineIdx === -1 && mdLines[i].includes(firstLine)) {
-          startLineIdx = i;
-        }
-        if (startLineIdx !== -1 && mdLines[i].includes(lastLine)) {
-          endLineIdx = i;
-        }
-      }
-
-      if (startLineIdx !== -1 && endLineIdx !== -1) {
-        selectedMarkdown = mdLines
-          .slice(startLineIdx, endLineIdx + 1)
-          .join("\n");
-
-        // Calculate character positions
-        let charPos = 0;
-        for (let i = 0; i < startLineIdx; i++) {
-          charPos += mdLines[i].length + 1; // +1 for \n
-        }
-        markdownFrom = charPos;
-        markdownTo = charPos + selectedMarkdown.length;
-      } else {
-        selectedMarkdown = selectedText;
+    if (selectedText.length > 8) {
+      const idx = fullMarkdown.indexOf(selectedText);
+      if (idx !== -1) {
+        markdownFrom = idx;
+        markdownTo = idx + selectedText.length;
       }
     }
 
-    // Build surrounding context (3 lines before and after)
+    // Fallback: try matching the first line of the selected text
+    if (markdownFrom === -1 && selectedText.trim().length > 0) {
+      const firstLine = selectedText.split("\n")[0].trim();
+      if (firstLine.length > 4) {
+        const idx = fullMarkdown.indexOf(firstLine);
+        if (idx !== -1) {
+          markdownFrom = idx;
+          markdownTo = idx + selectedText.length;
+          // Clamp to markdown length
+          if (markdownTo > fullMarkdown.length) {
+            markdownTo = fullMarkdown.length;
+          }
+        }
+      }
+    }
+
+    // --- Build surrounding context (3 lines before and after) ---
     const contextPadding = 3;
     const allLines = fullMarkdown.split("\n");
     let startCtx = 0;
     let endCtx = allLines.length;
 
     if (markdownFrom >= 0) {
+      // Find the line containing markdownFrom
       let charCount = 0;
       for (let i = 0; i < allLines.length; i++) {
-        if (charCount >= markdownFrom) {
+        const lineEnd = charCount + allLines[i].length + 1;
+        if (lineEnd > markdownFrom) {
           startCtx = Math.max(0, i - contextPadding);
           break;
         }
-        charCount += allLines[i].length + 1;
+        charCount = lineEnd;
       }
       charCount = 0;
       for (let i = 0; i < allLines.length; i++) {

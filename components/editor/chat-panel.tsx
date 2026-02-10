@@ -228,8 +228,7 @@ export function ChatPanel() {
               </div>
               <div className="max-h-[100px] overflow-auto">
                 <pre className="text-xs font-mono leading-relaxed text-[hsl(var(--foreground))] whitespace-pre-wrap break-words px-3 py-2">
-                  {selectionCtx.selectedMarkdown ||
-                    selectionCtx.selectedText}
+                  {selectionCtx.selectedText}
                 </pre>
               </div>
             </div>

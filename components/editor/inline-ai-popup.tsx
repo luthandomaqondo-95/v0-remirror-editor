@@ -9,9 +9,10 @@ import {
 } from "./use-selection-context";
 
 /**
- * A bottom-anchored bar that appears at the base of the editor area when
- * the user has selected text.  It does NOT auto-focus so the browser
- * selection highlight stays visible.
+ * Inline floating popup that appears directly above the user's text selection.
+ * Uses the browser's native Selection API for positioning so coordinates
+ * are always accurate regardless of scroll position.
+ * Does NOT auto-focus the input, so the browser selection highlight remains.
  */
 export function InlineAIPopup() {
   const { view } = useRemirrorContext();
@@ -19,11 +20,56 @@ export function InlineAIPopup() {
   const [selectionCtx, setSelectionCtx] = useState<SelectionContext | null>(
     null,
   );
+  const [popupStyle, setPopupStyle] = useState<React.CSSProperties | null>(
+    null,
+  );
   const [inputValue, setInputValue] = useState("");
   const [dismissed, setDismissed] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dismissedSelectionRef = useRef<string>("");
+
+  /**
+   * Position the popup above the native browser selection range.
+   * We get the bounding rect of the range itself (not ProseMirror coords)
+   * and place the popup relative to the scroll container.
+   */
+  const positionPopup = useCallback(() => {
+    const domSelection = window.getSelection();
+    if (!domSelection || domSelection.rangeCount === 0 || domSelection.isCollapsed) {
+      setPopupStyle(null);
+      return;
+    }
+
+    const range = domSelection.getRangeAt(0);
+    const rangeRect = range.getBoundingClientRect();
+
+    // Find the scroll container (the .overflow-auto wrapper)
+    const scrollContainer = view.dom.closest(".overflow-auto");
+    if (!scrollContainer) {
+      setPopupStyle(null);
+      return;
+    }
+    const containerRect = scrollContainer.getBoundingClientRect();
+
+    // Position above the selection, centered on the range
+    const popupWidth = 320;
+    const gap = 8;
+    let left = rangeRect.left - containerRect.left + rangeRect.width / 2 - popupWidth / 2;
+    const top = rangeRect.top - containerRect.top + scrollContainer.scrollTop - gap;
+
+    // Clamp left so the popup stays within the container
+    left = Math.max(8, Math.min(left, containerRect.width - popupWidth - 8));
+
+    setPopupStyle({
+      position: "absolute",
+      top: `${top}px`,
+      left: `${left}px`,
+      width: `${popupWidth}px`,
+      transform: "translateY(-100%)",
+      zIndex: 40,
+    });
+  }, [view]);
 
   // Capture selection on mouseup and keyup (Shift+Arrow selections)
   useEffect(() => {
@@ -35,6 +81,7 @@ export function InlineAIPopup() {
 
         if (!ctx.hasSelection) {
           setSelectionCtx(null);
+          setPopupStyle(null);
           setDismissed(false);
           dismissedSelectionRef.current = "";
           return;
@@ -55,6 +102,7 @@ export function InlineAIPopup() {
         }
 
         setSelectionCtx(ctx);
+        positionPopup();
       });
     };
 
@@ -71,9 +119,9 @@ export function InlineAIPopup() {
       editorDom.removeEventListener("mouseup", handleSelectionEnd);
       editorDom.removeEventListener("keyup", handleKeyUp);
     };
-  }, [view, capture, dismissed]);
+  }, [view, capture, dismissed, positionPopup]);
 
-  // Clear when clicking collapses selection
+  // Clear when clicking outside collapses selection
   useEffect(() => {
     const handleDocClick = (e: MouseEvent) => {
       if (popupRef.current?.contains(e.target as Node)) return;
@@ -82,6 +130,7 @@ export function InlineAIPopup() {
         const ctx = capture();
         if (!ctx.hasSelection) {
           setSelectionCtx(null);
+          setPopupStyle(null);
           setDismissed(false);
           dismissedSelectionRef.current = "";
         }
@@ -116,15 +165,19 @@ export function InlineAIPopup() {
     }
   }, [selectionCtx]);
 
-  if (!selectionCtx?.hasSelection || dismissed) return null;
+  if (!selectionCtx?.hasSelection || !popupStyle || dismissed) return null;
 
   return (
     <div
       ref={popupRef}
-      className="z-30 border-t border-[hsl(var(--border))] bg-[hsl(var(--card))]"
-      onMouseDown={(e) => e.preventDefault()}
+      style={popupStyle}
+      className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-lg"
+      onMouseDown={(e) => {
+        // Prevent the popup from stealing focus / collapsing the selection
+        e.preventDefault();
+      }}
     >
-      <div className="flex items-center gap-2 px-4 py-2.5 max-w-4xl mx-auto">
+      <div className="flex items-center gap-2 px-3 py-2">
         <Sparkles
           size={14}
           className="text-[hsl(var(--primary))] flex-shrink-0"
@@ -150,16 +203,16 @@ export function InlineAIPopup() {
           type="button"
           onClick={handleSubmit}
           disabled={!inputValue.trim()}
-          className="flex items-center justify-center w-7 h-7 rounded-md text-[hsl(var(--primary))] hover:bg-[hsl(var(--editor-active))] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center justify-center w-6 h-6 rounded-md text-[hsl(var(--primary))] hover:bg-[hsl(var(--muted))] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <Send size={13} />
+          <Send size={12} />
         </button>
         <button
           type="button"
           onClick={handleDismiss}
-          className="flex items-center justify-center w-7 h-7 rounded-md text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors cursor-pointer"
+          className="flex items-center justify-center w-6 h-6 rounded-md text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors cursor-pointer"
         >
-          <X size={13} />
+          <X size={12} />
         </button>
       </div>
     </div>

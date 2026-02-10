@@ -1354,9 +1354,9 @@ export function DocumentEditor() {
               <div className="max-w-4xl mx-auto px-8 py-6">
                 <EditorComponent />
               </div>
+              <InlineAIPopup />
             </div>
-            <InlineAIPopup />
-            <TableContextMenu />
+            {/* <TableContextMenu /> */}
 
             {/* Chat Panel -- inside Remirror context */}
             {showPanel && (
