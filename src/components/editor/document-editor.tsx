@@ -126,38 +126,6 @@ export function DocumentEditor() {
 }
 
 
-const INITIAL_MARKDOWN = `# Welcome to the Document Editor
-
-This is a **rich text editor** built with _Remirror_ and the Markdown extension.
-
-## Features
-
-You can use the toolbar above to format your content:
-
-- **Bold** text with \`Ctrl+B\`
-- *Italic* text with \`Ctrl+I\`
-- ~~Strikethrough~~ text
-- __Underline__ text with \`Ctrl+U\`
-
-### Ordered Lists
-
-1. First item
-2. Second item
-3. Third item
-
-### Task List
-
-- [ ] Unchecked task
-- [x] Completed task
-
-> This is a blockquote for important callouts.
-
----
-
-Select any text and open the chat panel to interact with AI about your selection.
-`;
-
-
 // AFS Section 1: Cover Page & Table of Contents
 const afsCoverPage = `
 # ACME CORPORATION LTD.
@@ -1346,14 +1314,14 @@ United Kingdom
 const defaultContent = [
 	afsCoverPage,
 	afsCompanyInfo,
-	// afsChairmanStatement,
+	afsChairmanStatement,
 	afsCEOReport,
-	// afsStrategicReport,
-	// afsCorporateGovernance,
-	// afsRiskManagement,
+	afsStrategicReport,
+	afsCorporateGovernance,
+	afsRiskManagement,
 	afsFinancialPosition,
 	afsDetailedNotes,
-	// afsFiveYearSummary,
-	// afsShareholderInfo,
+	afsFiveYearSummary,
+	afsShareholderInfo,
 	afsCorporateDirectory,
 ].join("\n\n---\n\n")

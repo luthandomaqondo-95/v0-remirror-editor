@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Sparkles, Copy, Check, FileCode2, Loader2 } from "lucide-react";
+import { useRemirrorContext } from "@remirror/react";
 import {
   useSelectionCapture,
   type SelectionContext,
@@ -27,6 +28,7 @@ interface ChatMessage {
  * Below is a chat message list and an input to interact with AI.
  */
 export function ChatPanel() {
+  const { view } = useRemirrorContext();
   const { capture } = useSelectionCapture();
   const aiEdit = useAiEdit();
   const [selectionCtx, setSelectionCtx] = useState<SelectionContext | null>(
@@ -40,7 +42,16 @@ export function ChatPanel() {
 
   // Capture selection on mouseup so the chat panel stays in sync
   useEffect(() => {
-    const handleSelectionChange = () => {
+    const handleSelectionChange = (event: MouseEvent | KeyboardEvent) => {
+      const target = event.target as Node | null;
+
+      // Only recapture the selection when the interaction happens
+      // inside the editor DOM. Clicking in the ChatPanel (or other
+      // UI outside the editor) should not clear the stored selection.
+      if (target && !view.dom.contains(target)) {
+        return;
+      }
+
       requestAnimationFrame(() => {
         const ctx = capture();
         setSelectionCtx(ctx.hasSelection ? ctx : null);
@@ -53,7 +64,7 @@ export function ChatPanel() {
       document.removeEventListener("mouseup", handleSelectionChange);
       document.removeEventListener("keyup", handleSelectionChange);
     };
-  }, [capture]);
+  }, [capture, view]);
 
   // Listen for inline AI popup events
   useEffect(() => {
