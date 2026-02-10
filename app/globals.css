@@ -196,6 +196,44 @@
   background: hsl(var(--primary) / 0.2);
 }
 
+/* Table hover add-row / add-column buttons */
+.remirror-editor table {
+  position: relative;
+}
+
+.remirror-editor td.ProseMirror-selectednode,
+.remirror-editor th.ProseMirror-selectednode {
+  background: hsl(var(--primary) / 0.1);
+}
+
+/* Highlight mark styling */
+.remirror-editor mark[data-text-highlight-mark] {
+  border-radius: 2px;
+  padding: 0.05em 0.1em;
+}
+
+/* Sub/Sup styles */
+.remirror-editor sub {
+  font-size: 0.75em;
+  vertical-align: sub;
+}
+
+.remirror-editor sup {
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+/* Link styling */
+.remirror-editor a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.remirror-editor a:hover {
+  opacity: 0.8;
+}
+
 /* Remove default remirror theme overrides */
 .remirror-theme {
   --rmr-color-selection-background: hsl(var(--primary) / 0.15);

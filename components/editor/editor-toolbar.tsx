@@ -1,14 +1,12 @@
 "use client";
 
-import React, { useCallback } from "react";
-import { useCommands, useActive, useChainedCommands } from "@remirror/react";
+import React, { useCallback, useState, useRef, useEffect } from "react";
+import { useCommands, useActive } from "@remirror/react";
 import {
   Bold,
   Italic,
   Underline,
-  Heading1,
-  Heading2,
-  Heading3,
+  Strikethrough,
   List,
   ListOrdered,
   CheckSquare,
@@ -18,7 +16,16 @@ import {
   AlignCenter,
   AlignRight,
   AlignJustify,
+  Link,
+  Highlighter,
+  Minus,
+  Subscript,
+  Superscript,
+  ChevronDown,
+  Type,
 } from "lucide-react";
+
+/* ── Shared UI ─────────────────────────────────────────────── */
 
 function ToolbarButton({
   onClick,
@@ -26,12 +33,14 @@ function ToolbarButton({
   disabled = false,
   title,
   children,
+  className = "",
 }: {
   onClick: () => void;
   active?: boolean;
   disabled?: boolean;
   title: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
     <button
@@ -46,7 +55,7 @@ function ToolbarButton({
         active
           ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
           : "text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-active))]"
-      } ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+      } ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"} ${className}`}
     >
       {children}
     </button>
@@ -57,46 +66,295 @@ function ToolbarDivider() {
   return <div className="w-px h-6 bg-[hsl(var(--border))] mx-1" />;
 }
 
-export function EditorToolbar() {
+/* ── Generic dropdown wrapper ──────────────────────────────── */
+
+function ToolbarDropdown({
+  trigger,
+  children,
+  align = "left",
+}: {
+  trigger: React.ReactNode;
+  children: React.ReactNode;
+  align?: "left" | "right";
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          setOpen((o) => !o);
+        }}
+        className="flex items-center gap-1 px-2 h-8 rounded text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-active))] transition-colors cursor-pointer"
+      >
+        {trigger}
+        <ChevronDown size={12} />
+      </button>
+      {open && (
+        <div
+          className={`absolute top-full mt-1 ${align === "right" ? "right-0" : "left-0"} z-50 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-lg py-1 min-w-[160px]`}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {/* Pass close callback via click wrapper */}
+          <div onClick={() => setOpen(false)}>{children}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DropdownItem({
+  onClick,
+  active = false,
+  children,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onMouseDown={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
+      className={`w-full text-left px-3 py-1.5 text-sm transition-colors cursor-pointer ${
+        active
+          ? "bg-[hsl(var(--editor-active))] text-[hsl(var(--primary))] font-medium"
+          : "text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ── Heading / Paragraph dropdown ──────────────────────────── */
+
+function HeadingDropdown() {
   const commands = useCommands();
   const active = useActive();
-  const chain = useChainedCommands();
 
-  const insertTable = useCallback(() => {
-    commands.createTable({ rowsCount: 3, columnsCount: 3, withHeaderRow: true });
-  }, [commands]);
+  const currentLabel = active.heading({ level: 1 })
+    ? "Heading 1"
+    : active.heading({ level: 2 })
+      ? "Heading 2"
+      : active.heading({ level: 3 })
+        ? "Heading 3"
+        : "Paragraph";
 
-  const insertImage = useCallback(() => {
-    const url = window.prompt("Enter the image URL:");
+  return (
+    <ToolbarDropdown
+      trigger={
+        <span className="flex items-center gap-1.5">
+          <Type size={14} />
+          <span className="text-xs min-w-[60px]">{currentLabel}</span>
+        </span>
+      }
+    >
+      <DropdownItem
+        onClick={() => commands.convertParagraph?.() || commands.toggleHeading?.({ level: 1 })}
+        active={!active.heading()}
+      >
+        <span className="text-sm">Paragraph</span>
+      </DropdownItem>
+      <DropdownItem
+        onClick={() => commands.toggleHeading({ level: 1 })}
+        active={active.heading({ level: 1 })}
+      >
+        <span className="text-lg font-bold">Heading 1</span>
+      </DropdownItem>
+      <DropdownItem
+        onClick={() => commands.toggleHeading({ level: 2 })}
+        active={active.heading({ level: 2 })}
+      >
+        <span className="text-base font-semibold">Heading 2</span>
+      </DropdownItem>
+      <DropdownItem
+        onClick={() => commands.toggleHeading({ level: 3 })}
+        active={active.heading({ level: 3 })}
+      >
+        <span className="text-sm font-semibold">Heading 3</span>
+      </DropdownItem>
+    </ToolbarDropdown>
+  );
+}
+
+/* ── Highlight color dropdown ──────────────────────────────── */
+
+const HIGHLIGHT_COLORS = [
+  { label: "Yellow", color: "#fef08a" },
+  { label: "Green", color: "#bbf7d0" },
+  { label: "Blue", color: "#bfdbfe" },
+  { label: "Pink", color: "#fbcfe8" },
+  { label: "Orange", color: "#fed7aa" },
+  { label: "Purple", color: "#e9d5ff" },
+];
+
+function HighlightDropdown() {
+  const commands = useCommands();
+
+  return (
+    <ToolbarDropdown
+      trigger={<Highlighter size={15} />}
+    >
+      <div className="px-2 py-1.5">
+        <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
+          Highlight Color
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {HIGHLIGHT_COLORS.map((c) => (
+            <button
+              key={c.color}
+              type="button"
+              title={c.label}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                commands.setTextHighlight(c.color);
+              }}
+              className="w-6 h-6 rounded border border-[hsl(var(--border))] cursor-pointer hover:scale-110 transition-transform"
+              style={{ backgroundColor: c.color }}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            commands.removeTextHighlight();
+          }}
+          className="mt-2 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] cursor-pointer"
+        >
+          Remove highlight
+        </button>
+      </div>
+    </ToolbarDropdown>
+  );
+}
+
+/* ── Table grid picker (Google Docs style) ─────────────────── */
+
+function TableGridPicker() {
+  const commands = useCommands();
+  const [hover, setHover] = useState({ rows: 0, cols: 0 });
+  const maxRows = 8;
+  const maxCols = 8;
+
+  return (
+    <ToolbarDropdown trigger={<Table size={15} />}>
+      <div className="px-3 py-2">
+        <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
+          {hover.rows > 0
+            ? `${hover.rows} x ${hover.cols} table`
+            : "Insert Table"}
+        </p>
+        <div
+          className="grid gap-0.5"
+          style={{ gridTemplateColumns: `repeat(${maxCols}, 1fr)` }}
+          onMouseLeave={() => setHover({ rows: 0, cols: 0 })}
+        >
+          {Array.from({ length: maxRows * maxCols }, (_, i) => {
+            const row = Math.floor(i / maxCols) + 1;
+            const col = (i % maxCols) + 1;
+            const isActive = row <= hover.rows && col <= hover.cols;
+            return (
+              <button
+                key={i}
+                type="button"
+                onMouseEnter={() => setHover({ rows: row, cols: col })}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  commands.createTable({
+                    rowsCount: row,
+                    columnsCount: col,
+                    withHeaderRow: true,
+                  });
+                }}
+                className={`w-5 h-5 rounded-sm border transition-colors cursor-pointer ${
+                  isActive
+                    ? "bg-[hsl(var(--primary))] border-[hsl(var(--primary))]"
+                    : "bg-[hsl(var(--muted))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]"
+                }`}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </ToolbarDropdown>
+  );
+}
+
+/* ── Link insertion ────────────────────────────────────────── */
+
+function LinkButton() {
+  const commands = useCommands();
+  const active = useActive();
+
+  const handleLink = useCallback(() => {
+    if (active.link()) {
+      commands.removeLink();
+      return;
+    }
+    const href = window.prompt("Enter URL:");
+    if (href) {
+      commands.updateLink({ href, auto: false });
+    }
+  }, [commands, active]);
+
+  return (
+    <ToolbarButton
+      onClick={handleLink}
+      active={active.link()}
+      title="Insert Link"
+    >
+      <Link size={15} />
+    </ToolbarButton>
+  );
+}
+
+/* ── Image insertion ───────────────────────────────────────── */
+
+function ImageButton() {
+  const commands = useCommands();
+
+  const handleImage = useCallback(() => {
+    const url = window.prompt("Enter image URL:");
     if (url) {
       commands.insertImage({ src: url });
     }
   }, [commands]);
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 px-3 py-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--editor-toolbar))]">
-      {/* Headings */}
-      <ToolbarButton
-        onClick={() => commands.toggleHeading({ level: 1 })}
-        active={active.heading({ level: 1 })}
-        title="Heading 1"
-      >
-        <Heading1 size={16} />
-      </ToolbarButton>
-      <ToolbarButton
-        onClick={() => commands.toggleHeading({ level: 2 })}
-        active={active.heading({ level: 2 })}
-        title="Heading 2"
-      >
-        <Heading2 size={16} />
-      </ToolbarButton>
-      <ToolbarButton
-        onClick={() => commands.toggleHeading({ level: 3 })}
-        active={active.heading({ level: 3 })}
-        title="Heading 3"
-      >
-        <Heading3 size={16} />
-      </ToolbarButton>
+    <ToolbarButton onClick={handleImage} title="Insert Image">
+      <ImageIcon size={15} />
+    </ToolbarButton>
+  );
+}
+
+/* ── Main Toolbar ──────────────────────────────────────────── */
+
+export function EditorToolbar() {
+  const commands = useCommands();
+  const active = useActive();
+
+  return (
+    <div className="flex flex-wrap items-center gap-0.5 px-3 py-1.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--editor-toolbar))]">
+      {/* Heading / Paragraph dropdown */}
+      <HeadingDropdown />
 
       <ToolbarDivider />
 
@@ -106,22 +364,53 @@ export function EditorToolbar() {
         active={active.bold()}
         title="Bold (Ctrl+B)"
       >
-        <Bold size={16} />
+        <Bold size={15} />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => commands.toggleItalic()}
         active={active.italic()}
         title="Italic (Ctrl+I)"
       >
-        <Italic size={16} />
+        <Italic size={15} />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => commands.toggleUnderline()}
         active={active.underline()}
         title="Underline (Ctrl+U)"
       >
-        <Underline size={16} />
+        <Underline size={15} />
       </ToolbarButton>
+      <ToolbarButton
+        onClick={() => commands.toggleStrike()}
+        active={active.strike()}
+        title="Strikethrough"
+      >
+        <Strikethrough size={15} />
+      </ToolbarButton>
+
+      <ToolbarDivider />
+
+      {/* Sub / Super */}
+      <ToolbarButton
+        onClick={() => commands.toggleSubscript()}
+        active={active.sub()}
+        title="Subscript"
+      >
+        <Subscript size={15} />
+      </ToolbarButton>
+      <ToolbarButton
+        onClick={() => commands.toggleSuperscript()}
+        active={active.sup()}
+        title="Superscript"
+      >
+        <Superscript size={15} />
+      </ToolbarButton>
+
+      <ToolbarDivider />
+
+      {/* Highlight & Link */}
+      <HighlightDropdown />
+      <LinkButton />
 
       <ToolbarDivider />
 
@@ -129,61 +418,54 @@ export function EditorToolbar() {
       <ToolbarButton
         onClick={() => commands.toggleBulletList()}
         active={active.bulletList()}
-        title="Unordered List"
+        title="Bullet List"
       >
-        <List size={16} />
+        <List size={15} />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => commands.toggleOrderedList()}
         active={active.orderedList()}
         title="Ordered List"
       >
-        <ListOrdered size={16} />
+        <ListOrdered size={15} />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => commands.toggleTaskList()}
         active={active.taskList()}
         title="Checkbox List"
       >
-        <CheckSquare size={16} />
+        <CheckSquare size={15} />
       </ToolbarButton>
 
       <ToolbarDivider />
 
       {/* Alignment */}
-      <ToolbarButton
-        onClick={() => commands.leftAlign()}
-        title="Align Left"
-      >
-        <AlignLeft size={16} />
+      <ToolbarButton onClick={() => commands.leftAlign()} title="Align Left">
+        <AlignLeft size={15} />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => commands.centerAlign()}
         title="Align Center"
       >
-        <AlignCenter size={16} />
+        <AlignCenter size={15} />
       </ToolbarButton>
-      <ToolbarButton
-        onClick={() => commands.rightAlign()}
-        title="Align Right"
-      >
-        <AlignRight size={16} />
+      <ToolbarButton onClick={() => commands.rightAlign()} title="Align Right">
+        <AlignRight size={15} />
       </ToolbarButton>
-      <ToolbarButton
-        onClick={() => commands.justifyAlign()}
-        title="Justify"
-      >
-        <AlignJustify size={16} />
+      <ToolbarButton onClick={() => commands.justifyAlign()} title="Justify">
+        <AlignJustify size={15} />
       </ToolbarButton>
 
       <ToolbarDivider />
 
-      {/* Insert */}
-      <ToolbarButton onClick={insertTable} title="Insert Table">
-        <Table size={16} />
-      </ToolbarButton>
-      <ToolbarButton onClick={insertImage} title="Insert Image">
-        <ImageIcon size={16} />
+      {/* Insertions */}
+      <TableGridPicker />
+      <ImageButton />
+      <ToolbarButton
+        onClick={() => commands.insertHorizontalRule()}
+        title="Horizontal Rule"
+      >
+        <Minus size={15} />
       </ToolbarButton>
     </div>
   );

@@ -6,6 +6,7 @@ import {
   BoldExtension,
   ItalicExtension,
   UnderlineExtension,
+  StrikeExtension,
   HeadingExtension,
   BulletListExtension,
   OrderedListExtension,
@@ -23,10 +24,15 @@ import {
   HorizontalRuleExtension,
   DropCursorExtension,
   GapCursorExtension,
-  StrikeExtension,
+  SubExtension,
+  SupExtension,
+  TextHighlightExtension,
+  TextColorExtension,
 } from "remirror/extensions";
 import { EditorToolbar } from "./editor-toolbar";
-import { MarkdownSelectionPanel } from "./markdown-selection-panel";
+import { TableContextMenu } from "./table-context-menu";
+import { InlineAIPopup } from "./inline-ai-popup";
+import { ChatPanel } from "./chat-panel";
 import { PanelLeft, PanelLeftClose } from "lucide-react";
 
 import "remirror/styles/all.css";
@@ -41,6 +47,7 @@ You can use the toolbar above to format your content:
 
 - **Bold** text with \`Ctrl+B\`
 - *Italic* text with \`Ctrl+I\`
+- ~~Strikethrough~~ text
 - __Underline__ text with \`Ctrl+U\`
 
 ### Ordered Lists
@@ -58,7 +65,7 @@ You can use the toolbar above to format your content:
 
 ---
 
-Select any text and check the **Markdown Output** panel on the right to see the markdown representation of your selection.
+Select any text and open the chat panel to interact with AI about your selection.
 `;
 
 export function DocumentEditor() {
@@ -70,6 +77,7 @@ export function DocumentEditor() {
       new BoldExtension(),
       new ItalicExtension(),
       new UnderlineExtension(),
+      new StrikeExtension(),
       new HeadingExtension(),
       new BulletListExtension(),
       new OrderedListExtension(),
@@ -86,7 +94,10 @@ export function DocumentEditor() {
       new HorizontalRuleExtension(),
       new DropCursorExtension(),
       new GapCursorExtension(),
-      new StrikeExtension(),
+      new SubExtension(),
+      new SupExtension(),
+      new TextHighlightExtension(),
+      new TextColorExtension(),
     ],
     content: INITIAL_MARKDOWN,
     selection: "start",
@@ -119,7 +130,7 @@ export function DocumentEditor() {
         <button
           type="button"
           onClick={togglePanel}
-          title={showPanel ? "Hide markdown panel" : "Show markdown panel"}
+          title={showPanel ? "Hide chat panel" : "Show chat panel"}
           className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors cursor-pointer"
         >
           {showPanel ? (
@@ -128,27 +139,28 @@ export function DocumentEditor() {
             <PanelLeft size={16} />
           )}
           <span className="hidden sm:inline">
-            {showPanel ? "Hide" : "Show"} Markdown
+            {showPanel ? "Hide" : "Show"} Chat
           </span>
         </button>
       </header>
 
       {/* Editor area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Main editor */}
         <div className="flex-1 min-w-0 flex flex-col remirror-theme">
           <Remirror manager={manager} initialContent={state}>
             <EditorToolbar />
-            <div className="flex-1 overflow-auto bg-[hsl(var(--editor-surface))]">
+            <div className="flex-1 overflow-auto bg-[hsl(var(--editor-surface))] relative">
               <div className="max-w-4xl mx-auto px-8 py-6">
                 <EditorComponent />
               </div>
+              <InlineAIPopup />
             </div>
+            <TableContextMenu />
 
-            {/* Markdown Panel -- still inside Remirror context so hooks work */}
+            {/* Chat Panel -- inside Remirror context */}
             {showPanel && (
-              <div className="hidden lg:block fixed right-0 top-[57px] bottom-0 w-[360px] z-10">
-                <MarkdownSelectionPanel />
+              <div className="hidden lg:block fixed right-0 top-[57px] bottom-0 w-[380px] z-10">
+                <ChatPanel />
               </div>
             )}
           </Remirror>
