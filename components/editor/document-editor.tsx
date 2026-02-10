@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import { EditorComponent, Remirror, useRemirror } from "@remirror/react";
+import {
+  EditorComponent,
+  Remirror,
+  useRemirror,
+} from "@remirror/react";
 import {
   BoldExtension,
   ItalicExtension,
@@ -132,31 +136,33 @@ export function DocumentEditor() {
         </button>
       </header>
 
-      {/* Editor area */}
-      <Remirror
-        manager={manager}
-        initialContent={state}
-        onChange={onChange}
-      >
-        <div className="flex flex-1 overflow-hidden">
-          {/* Main editor column */}
-          <div className="flex flex-col flex-1 min-w-0">
-            <EditorToolbar />
-            <div className="flex-1 overflow-auto bg-[hsl(var(--editor-surface))]">
-              <div className="max-w-4xl mx-auto px-8 py-6">
-                <EditorComponent />
+      {/* Editor area - wrapped in remirror-theme for CSS variables */}
+      <div className="remirror-theme flex-1 flex flex-col overflow-hidden">
+        <Remirror
+          manager={manager}
+          initialContent={state}
+          onChange={onChange}
+        >
+          <div className="flex flex-1 overflow-hidden">
+            {/* Main editor column */}
+            <div className="flex flex-col flex-1 min-w-0">
+              <EditorToolbar />
+              <div className="flex-1 overflow-auto bg-[hsl(var(--editor-surface))]">
+                <div className="max-w-4xl mx-auto px-8 py-6">
+                  <EditorComponent />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Markdown Panel */}
-          {showPanel && (
-            <div className="hidden lg:flex lg:w-[360px] lg:flex-shrink-0">
-              <MarkdownSelectionPanel />
-            </div>
-          )}
-        </div>
-      </Remirror>
+            {/* Markdown Panel */}
+            {showPanel && (
+              <div className="hidden lg:flex lg:w-[360px] lg:flex-shrink-0">
+                <MarkdownSelectionPanel />
+              </div>
+            )}
+          </div>
+        </Remirror>
+      </div>
     </div>
   );
 }
