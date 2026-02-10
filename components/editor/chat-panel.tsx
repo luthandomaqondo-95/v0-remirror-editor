@@ -142,29 +142,6 @@ export function ChatPanel() {
         </span>
       </div>
 
-      {/* Selection context preview (Cursor-style) */}
-      {selectionCtx?.hasSelection && (
-        <div className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
-          <div className="flex items-center gap-2 px-3 py-2">
-            <FileCode2
-              size={13}
-              className="text-[hsl(var(--muted-foreground))] flex-shrink-0"
-            />
-            <span className="text-[11px] font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wide">
-              Selection Context
-            </span>
-            <span className="text-[10px] text-[hsl(var(--muted-foreground))] ml-auto">
-              pos {selectionCtx.markdownFrom}-{selectionCtx.markdownTo}
-            </span>
-          </div>
-          <div className="px-3 pb-2 max-h-[140px] overflow-auto">
-            <pre className="text-xs font-mono leading-relaxed text-[hsl(var(--foreground))] whitespace-pre-wrap break-words bg-[hsl(var(--card))] rounded-md p-2 border border-[hsl(var(--border))]">
-              {selectionCtx.selectedMarkdown || selectionCtx.selectedText}
-            </pre>
-          </div>
-        </div>
-      )}
-
       {/* Messages */}
       <div className="flex-1 overflow-auto px-3 py-3">
         {messages.length === 0 ? (
@@ -231,42 +208,65 @@ export function ChatPanel() {
         )}
       </div>
 
-      {/* Input */}
-      <div className="border-t border-[hsl(var(--border))] p-3">
-        <div className="flex items-end gap-2 bg-[hsl(var(--muted))] rounded-lg px-3 py-2">
-          <textarea
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder={
-              selectionCtx?.hasSelection
-                ? "Ask AI about the selection..."
-                : "Ask AI about the document..."
-            }
-            rows={1}
-            className="flex-1 text-sm bg-transparent border-none outline-none resize-none text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] max-h-[80px]"
-          />
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={!inputValue.trim()}
-            className="flex items-center justify-center w-7 h-7 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
-          >
-            <Send size={13} />
-          </button>
-        </div>
+      {/* Selection context + Input */}
+      <div className="border-t border-[hsl(var(--border))]">
+        {/* Selection context card */}
         {selectionCtx?.hasSelection && (
-          <p className="text-[10px] text-[hsl(var(--muted-foreground))] mt-1.5 px-1">
-            Context attached: {selectionCtx.selectedText.slice(0, 50)}
-            {selectionCtx.selectedText.length > 50 ? "..." : ""}
-          </p>
+          <div className="px-3 pt-3 pb-0">
+            <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--muted))] overflow-hidden">
+              <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[hsl(var(--border))]">
+                <FileCode2
+                  size={12}
+                  className="text-[hsl(var(--muted-foreground))] flex-shrink-0"
+                />
+                <span className="text-[11px] font-medium text-[hsl(var(--muted-foreground))]">
+                  Selected text
+                </span>
+                <span className="text-[10px] text-[hsl(var(--muted-foreground))] ml-auto tabular-nums">
+                  {selectionCtx.selectedText.length} chars
+                </span>
+              </div>
+              <div className="max-h-[100px] overflow-auto">
+                <pre className="text-xs font-mono leading-relaxed text-[hsl(var(--foreground))] whitespace-pre-wrap break-words px-3 py-2">
+                  {selectionCtx.selectedMarkdown ||
+                    selectionCtx.selectedText}
+                </pre>
+              </div>
+            </div>
+          </div>
         )}
+
+        {/* Input */}
+        <div className="p-3">
+          <div className="flex items-end gap-2 bg-[hsl(var(--muted))] rounded-lg px-3 py-2">
+            <textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder={
+                selectionCtx?.hasSelection
+                  ? "Ask AI about the selection..."
+                  : "Ask AI about the document..."
+              }
+              rows={1}
+              className="flex-1 text-sm bg-transparent border-none outline-none resize-none text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] max-h-[80px]"
+            />
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={!inputValue.trim()}
+              className="flex items-center justify-center w-7 h-7 rounded-md bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+            >
+              <Send size={13} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
