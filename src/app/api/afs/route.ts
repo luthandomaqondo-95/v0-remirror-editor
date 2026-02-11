@@ -1,5 +1,15 @@
 import { NextResponse } from 'next/server'
 
+export async function GET(request: Request) {
+	const { searchParams } = new URL(request.url)
+	const project_id = searchParams.get("project_id")
+	if (!project_id) {
+		return NextResponse.json({ error: "Project ID is required" }, { status: 400 })
+	}
+	return NextResponse.json({ content: defaultContent })
+}
+
+
 // AFS Section 1: Cover Page & Table of Contents
 const afsCoverPage = `
 # ACME CORPORATION LTD.
@@ -1189,17 +1199,14 @@ const defaultContent = [
 	afsCoverPage,
 	afsCompanyInfo,
 	// afsChairmanStatement,
-	afsCEOReport,
+	// afsCEOReport,
 	// afsStrategicReport,
 	// afsCorporateGovernance,
 	// afsRiskManagement,
-	afsFinancialPosition,
-	afsDetailedNotes,
+	// afsFinancialPosition,
+	// afsDetailedNotes,
 	// afsFiveYearSummary,
 	// afsShareholderInfo,
 	afsCorporateDirectory,
 ].join("\n\n---\n\n")
 
-export async function GET() {
-	return NextResponse.json({ content: defaultContent })
-}

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, use } from "react"
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -13,11 +14,25 @@ import StepIndicator from "@/components/financials/StepIndicator"
 // import { Step2Uploads } from "@/components/financials/process-steps/step-2-uploads";
 // import { Step3GLAndTrial } from "@/components/financials/process-steps/step-3-gl-and-trial";
 // import { Step4FS } from "@/components/financials/process-steps/step-4-fs";
-import { StepFullAFS } from "@/components/financials/process-steps/step-full-afs-remirror";
 import { projectInfoSchema } from "@/lib/definitions";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebouce";
 // import { PDFExport } from "@/components/pdf-export";
+import { FinalAFSSkeleton } from "@/components/financials/final-afs-skeleton";
+import { sleep } from "@/lib/utils";
+
+const StepFullAFS = dynamic(
+    () =>
+        import("@/components/financials/process-steps/step-full-afs-remirror").then(
+            async (mod) => sleep(300).then(() => mod.StepFullAFS)
+        ),
+    {
+        ssr: false,
+        loading: () => (
+            <FinalAFSSkeleton />
+        ),
+    }
+);
 
 const slideVariants = {
   enter: (direction: number) => ({

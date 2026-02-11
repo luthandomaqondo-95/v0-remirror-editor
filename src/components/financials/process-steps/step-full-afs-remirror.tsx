@@ -2,6 +2,7 @@ import { Activity, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronsLeft, ChevronsRight, List, Plus, Scissors, ZoomIn, ZoomOut } from "lucide-react";
+import { Transaction } from "remirror";
 import { EditorComponent, Remirror, useRemirror } from "@remirror/react";
 import {
     BoldExtension, ItalicExtension, UnderlineExtension, StrikeExtension, HeadingExtension, BulletListExtension,
@@ -12,7 +13,7 @@ import {
 } from "remirror/extensions";
 import "remirror/styles/all.css";
 import '@/styles/remirror.css'
-import { cn } from "@/lib/utils";
+import { cn, sleep } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PageData, PageSettings } from "@/types/afs-types";
@@ -43,75 +44,119 @@ export function StepFullAFS({
     // 	pages: 
     // })
 
-
     const [currentPage, setCurrentPage] = useState(1)
     const [zoom, setZoom] = useState("100")
-    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(true);
     const [pages, setPages] = useState<PageData[]>([])
     const [hasTableOfContents, setHasTableOfContents] = useState(false);
     const [hasUnsavedChangesInThisStep, setHasUnsavedChangesInThisStep] = useState(false);
     const [selection, setSelection] = useState<{ text: string, start: number, end: number } | null>(null);
     const [editingRange, setEditingRange] = useState<{ start: number, end: number } | null>(null);
 
-
-    // Computed full content for preview/export
-    const fullContent = useMemo(() => pages.map((p) => p.content).join("\n\n---\n\n"), [pages]);
+    // // Computed full content for preview/export
+    // const fullContent = useMemo(() => pages.map((p) => p.content).join("\n\n---\n\n"), [pages]);
 
     const { data: initialContent, isLoading, isError } = useQuery({
-        queryKey: ["afs-default-content"],
+        queryKey: ["afs-default-content", project_id],
         queryFn: async () => {
-            const res = await fetch(`/api/afs?project_id=${project_id}`)
-            if (!res.ok) throw new Error("Failed to fetch")
-            const { content } = await res.json()
-            return content as string
+            return fetch(`/api/afs?project_id=${project_id}`)
+                .then(res => {
+                    if (!res.ok) throw new Error("Failed to fetch")
+                    return res.json()
+                })
+                .then(response => {
+                    // console.log("Initial content:", response)
+                    return response.content as string
+                })
+                .catch(error => {
+                    console.error("Failed to fetch initial content:", error)
+                    return "Hello World"
+                })
         },
-        staleTime: Number.POSITIVE_INFINITY,
+        // staleTime: Number.POSITIVE_INFINITY,
     })
-    const { manager, state } = useRemirror({
-        extensions: () => [
-            new MarkdownExtension({ copyAsMarkdown: false }),
-            new BoldExtension({}),
-            new ItalicExtension({}),
-            new UnderlineExtension(),
-            new StrikeExtension({}),
-            new HeadingExtension({}),
-            new BulletListExtension({}),
-            new OrderedListExtension(),
-            new TaskListExtension(),
-            new ImageExtension({ enableResizing: true }),
-            new HardBreakExtension(),
-            new LinkExtension({ autoLink: true }),
-            new PlaceholderExtension({ placeholder: "Start writing..." }),
-            new NodeFormattingExtension({}),
-            new TableExtension({}),
-            new BlockquoteExtension(),
-            new CodeExtension({}),
-            new CodeBlockExtension({}),
-            new HorizontalRuleExtension({}),
-            new DropCursorExtension({}),
-            new GapCursorExtension(),
-            new SubExtension(),
-            new SupExtension(),
-            new TextHighlightExtension({}),
-            new TextColorExtension({}),
-            new TextCaseExtension({}),
-            new AiEditExtension(),
-        ],
-        content: initialContent,
-        selection: "start",
-        stringHandler: "markdown",
-    });
+    const { manager, state, setState } = useRemirror(
+        {
+            extensions: () => [
+                new MarkdownExtension({ copyAsMarkdown: false }),
+                new BoldExtension({}),
+                new ItalicExtension({}),
+                new UnderlineExtension(),
+                new StrikeExtension({}),
+                new HeadingExtension({}),
+                new BulletListExtension({}),
+                new OrderedListExtension(),
+                new TaskListExtension(),
+                new ImageExtension({ enableResizing: true }),
+                new HardBreakExtension(),
+                new LinkExtension({ autoLink: true }),
+                new PlaceholderExtension({ placeholder: "Start writing..." }),
+                new NodeFormattingExtension({}),
+                new TableExtension({}),
+                new BlockquoteExtension(),
+                new CodeExtension({}),
+                new CodeBlockExtension({}),
+                new HorizontalRuleExtension({}),
+                new DropCursorExtension({}),
+                new GapCursorExtension(),
+                new SubExtension(),
+                new SupExtension(),
+                new TextHighlightExtension({}),
+                new TextColorExtension({}),
+                new TextCaseExtension({}),
+                new AiEditExtension(),
+            ],
+            content: initialContent,
+            selection: "start",  // Remove this line
+            stringHandler: "markdown",
+        },
+    );
+    // Load content into editor when it arrives
+    // Add this effect to push data into the editor once it's loaded
+    useEffect(() => {
+        if (initialContent && manager && !isLoading) {
+            (async () => {
+                // Create a new state from the markdown content
+                const newState = manager.createState({
+                    content: initialContent,
+                    stringHandler: 'markdown',
+                });
+
+                // Update the editor state
+                setState(newState);
+            })();
+        }
+        // We only want to do this once when initialContent is first available
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialContent, isLoading, manager]);
+    const handleContentChange = (parameter: { state: any, tr?: Transaction }) => {
+        let nextState = parameter.state;
+
+        // Check if the document content for the editor changed.
+        if (parameter.tr?.docChanged) {
+            // // Insert text into the editor via a new state.
+            // nextState = state.applyTransaction(state.tr.insertText(' NO!!!')).state;
+
+
+            setHasUnsavedChanges(true);
+            setHasUnsavedChangesInThisStep(true);
+        }
+
+        // Update the state to the latest value.
+        setState(nextState);
+    }
+
 
 
     const performAutoSave = useCallback(async () => {
         setIsSaving(true)
         try {
-            const saveData = {
-                content: fullContent,
-                pages: pages,
-                savedAt: new Date().toISOString(),
-            }
-            // localStorage.setItem("afs-draft", JSON.stringify(saveData));
+            // const saveData = {
+            //     content: fullContent,
+            //     pages: pages,
+            //     savedAt: new Date().toISOString(),
+            // }
+            // // localStorage.setItem("afs-draft", JSON.stringify(saveData));
 
             setHasUnsavedChanges(false)
             setHasUnsavedChangesInThisStep(false);
@@ -120,14 +165,14 @@ export function StepFullAFS({
         } finally {
             setIsSaving(false)
         }
-    }, [fullContent, pages]);
+    }, [pages]);
 
     const updatePageSettings = (index: number, settings: PageSettings) => {
-        setPages((prev) => {
-            const newPages = [...prev]
-            newPages[index] = { ...newPages[index], settings }
-            return newPages
-        })
+        // setPages((prev) => {
+        //     const newPages = [...prev]
+        //     newPages[index] = { ...newPages[index], settings }
+        //     return newPages
+        // })
         setHasUnsavedChanges(true);
         setHasUnsavedChangesInThisStep(true);
     }
@@ -149,7 +194,11 @@ export function StepFullAFS({
 
     return (
         <div className="h-full flex-1 flex overflow-hidden">
-            <Remirror manager={manager} initialContent={state}>
+            <Remirror
+                manager={manager}
+                state={state}
+                onChange={handleContentChange}
+            >
                 {/* Chat panel - sits alongside entire Editor/Preview area */}
                 <div
                     className={cn(
@@ -290,7 +339,7 @@ export function StepFullAFS({
                                         {/* Skeleton Page 1 */}
                                         <div className="relative group">
                                             <div
-                                                className="bg-white shadow-lg border rounded-sm overflow-hidden"
+                                                className="bg-primary/5 rounded-xl shadow-lg border overflow-hidden"
                                                 style={{ width: "210mm", minHeight: "297mm", padding: "10mm 15mm" }}
                                             >
                                                 {/* Page header skeleton */}
@@ -415,43 +464,18 @@ export function StepFullAFS({
                             <>
                                 {/* Editor interface */}
                                 <div
-                                    className={cn(
-                                        "flex-1 bg-muted/10 relative transition-all duration-300 ease-in-out overflow-auto min-h-0"
-                                    )}
+                                    className="flex-1 overflow-auto relative mt-4"
+                                    style={{
+                                        transform: `scale(${Number.parseInt(zoom) / 100})`,
+                                        transformOrigin: "top center",
+                                    }}
                                 >
-                                    <div
-                                        className="relative flex flex-col items-center py-8"
-                                        style={{
-                                            transform: `scale(${Number.parseInt(zoom) / 100})`,
-                                            transformOrigin: "top center",
-                                        }}
-                                    >
-                                        {/* {pages.map((pageData, index) => (
-                                        <LexicalPageEditor
-                                            key={pageData.id}
-                                            pageNumber={index + 1}
-                                            totalPages={pages.length}
-                                            content={pageData.content}
-                                            onChange={(content) => updatePage(index, content)}
-                                            onTextSelection={handleMouseUp}
-                                            onAddNext={() => addPage(index)}
-                                            onDelete={() => deletePage(index)}
-                                            onMoveUp={() => movePage(index, index - 1)}
-                                            onMoveDown={() => movePage(index, index + 1)}
-                                            settings={pageData.settings}
-                                            onSettingsChange={(settings) => updatePageSettings(index, settings)}
-                                            hideToolbar={true}
-                                            onEditorFocus={handleEditorFocus}
-                                            onSplitOverflow={(currentContent, overflowContent) => handleSplitOverflow(index, currentContent, overflowContent)}
-                                        />
-                                    ))} */}
-                                        <div className="max-w-4xl mx-auto px-16 py-6 bg-primary/5">
-                                            <EditorComponent />
-                                        </div>
-                                        <InlineAIPopup />
+                                    <div className="max-w-4xl mx-auto px-16 py-6 bg-primary/5 rounded-xl">
+                                        <EditorComponent />
                                     </div>
-                                    <TableContextMenu />
+                                    <InlineAIPopup />
                                 </div>
+                                <TableContextMenu />
                             </>
                         )
                     }

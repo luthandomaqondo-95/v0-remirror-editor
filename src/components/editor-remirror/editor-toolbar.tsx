@@ -3,10 +3,11 @@
 import React, { useCallback, useState, useRef, useEffect } from "react";
 import { useCommands, useActive } from "@remirror/react";
 import { 
-	Bold, Italic, Underline, Strikethrough, List, ListOrdered, CheckSquare, Table, ImageIcon, 
+	Bold, Italic, Underline, Strikethrough, List, ListOrdered, CheckSquare, ImageIcon, 
 	AlignLeft, AlignCenter, AlignRight, AlignJustify, 
 	Link, Highlighter, Minus, Subscript, Superscript, 
-	ChevronDown, Type, PaintBucket, Palette, CaseSensitive, ListTree 
+	ChevronDown, Type, PaintBucket, Palette, CaseSensitive, ListTree,
+	Undo2, Redo2, Plus 
 } from "lucide-react";
 
 /* ── Shared UI ─────────────────────────────────────────────── */
@@ -340,57 +341,6 @@ function TableCellBackgroundDropdown() {
 	);
 }
 
-/* ── Table grid picker (Google Docs style) ─────────────────── */
-
-function TableGridPicker() {
-	const commands = useCommands();
-	const [hover, setHover] = useState({ rows: 0, cols: 0 });
-	const maxRows = 8;
-	const maxCols = 8;
-
-	return (
-		<ToolbarDropdown trigger={<Table size={15} />}>
-			<div className="px-3 py-2">
-				<p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
-					{hover.rows > 0
-						? `${hover.rows} x ${hover.cols} table`
-						: "Insert Table"}
-				</p>
-				<div
-					className="grid gap-0.5"
-					style={{ gridTemplateColumns: `repeat(${maxCols}, 1fr)` }}
-					onMouseLeave={() => setHover({ rows: 0, cols: 0 })}
-				>
-					{Array.from({ length: maxRows * maxCols }, (_, i) => {
-						const row = Math.floor(i / maxCols) + 1;
-						const col = (i % maxCols) + 1;
-						const isActive = row <= hover.rows && col <= hover.cols;
-						return (
-							<button
-								key={i}
-								type="button"
-								onMouseEnter={() => setHover({ rows: row, cols: col })}
-								onMouseDown={(e) => {
-									e.preventDefault();
-									commands.createTable({
-										rowsCount: row,
-										columnsCount: col,
-										withHeaderRow: true,
-									});
-								}}
-								className={`w-5 h-5 rounded-sm border transition-colors cursor-pointer ${isActive
-										? "bg-[hsl(var(--primary))] border-[hsl(var(--primary))]"
-										: "bg-[hsl(var(--muted))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]"
-									}`}
-							/>
-						);
-					})}
-				</div>
-			</div>
-		</ToolbarDropdown>
-	);
-}
-
 /* ── Alignment dropdown ───────────────────────────────────── */
 
 function AlignmentDropdown({
@@ -461,24 +411,6 @@ function LinkButton() {
 }
 
 /* ── Image insertion ───────────────────────────────────────── */
-
-function ImageButton() {
-	const commands = useCommands();
-
-	const handleImage = useCallback(() => {
-		const url = window.prompt("Enter image URL:");
-		if (url) {
-			commands.insertImage({ src: url });
-		}
-	}, [commands]);
-
-	return (
-		<ToolbarButton onClick={handleImage} title="Insert Image">
-			<ImageIcon size={15} />
-		</ToolbarButton>
-	);
-}
-
 /* ── Text case / formatting dropdown ───────────────────────── */
 
 function TextCaseDropdown() {
@@ -514,6 +446,327 @@ function TextCaseDropdown() {
 	);
 }
 
+/* ── Font family dropdown ───────────────────────────────────── */
+
+const FONT_FAMILIES = [
+	{ label: "Default", value: "" },
+	{ label: "Serif", value: "Georgia, Times, \"Times New Roman\", serif" },
+	{ label: "Sans Serif", value: "-apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif" },
+	{ label: "Monospace", value: "\"SF Mono\", Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace" },
+];
+
+function FontFamilyDropdown() {
+	const commands = useCommands();
+
+	return (
+		<ToolbarDropdown
+			trigger={
+				<span className="flex items-center gap-1.5">
+					<span className="text-xs min-w-[60px]">
+						Font
+					</span>
+				</span>
+			}
+		>
+			{FONT_FAMILIES.map((font) => (
+				<DropdownItem
+					// No reliable active detection for font family yet
+					key={font.label}
+					onClick={() => commands.setFontFamily?.(font.value)}
+				>
+					<span
+						className="text-sm"
+						style={font.value ? { fontFamily: font.value } : {}}
+					>
+						{font.label}
+					</span>
+				</DropdownItem>
+			))}
+		</ToolbarDropdown>
+	);
+}
+
+/* ── Insert dropdown (tables, images, TOC, link, etc.) ───────── */
+
+function InsertDropdown({ includeLink = false }: { includeLink?: boolean }) {
+	const commands = useCommands();
+	const [hover, setHover] = useState({ rows: 0, cols: 0 });
+	const maxRows = 8;
+	const maxCols = 8;
+
+	const handleImage = useCallback(() => {
+		const url = window.prompt("Enter image URL:");
+		if (url) {
+			commands.insertImage?.({ src: url });
+		}
+	}, [commands]);
+
+	const handleLink = useCallback(() => {
+		const href = window.prompt("Enter URL:");
+		if (href) {
+			commands.updateLink?.({ href, auto: false });
+		}
+	}, [commands]);
+
+	return (
+		<ToolbarDropdown
+			trigger={
+				<span className="flex items-center gap-1.5">
+					<Plus size={14} />
+					<span className="text-xs">
+						Insert
+					</span>
+				</span>
+			}
+			align="left"
+		>
+			<div className="px-3 py-2 space-y-3">
+				<div>
+					<p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2">
+						Insert Table
+					</p>
+					<div
+						className="grid gap-0.5"
+						style={{ gridTemplateColumns: `repeat(${maxCols}, 1fr)` }}
+						onMouseLeave={() => setHover({ rows: 0, cols: 0 })}
+					>
+						{Array.from({ length: maxRows * maxCols }, (_, i) => {
+							const row = Math.floor(i / maxCols) + 1;
+							const col = (i % maxCols) + 1;
+							const isActive = row <= hover.rows && col <= hover.cols;
+							return (
+								<button
+									key={i}
+									type="button"
+									onMouseEnter={() => setHover({ rows: row, cols: col })}
+									onMouseDown={(e) => {
+										e.preventDefault();
+										commands.createTable?.({
+											rowsCount: row,
+											columnsCount: col,
+											withHeaderRow: true,
+										});
+									}}
+									className={`w-5 h-5 rounded-sm border transition-colors cursor-pointer ${isActive
+											? "bg-[hsl(var(--primary))] border-[hsl(var(--primary))]"
+											: "bg-[hsl(var(--muted))] border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]"
+										}`}
+								/>
+							);
+						})}
+					</div>
+				</div>
+
+				<div className="border-t border-[hsl(var(--border))] -mx-3" />
+
+				<div className="space-y-1">
+					<DropdownItem onClick={handleImage}>
+						<div className="flex items-center gap-2">
+							<ImageIcon size={14} />
+							<span>Image</span>
+						</div>
+					</DropdownItem>
+					{includeLink && (
+						<DropdownItem onClick={handleLink}>
+							<div className="flex items-center gap-2">
+								<Link size={14} />
+								<span>Link</span>
+							</div>
+						</DropdownItem>
+					)}
+					<DropdownItem
+						onClick={() =>
+							commands.insertText?.("## Table of Contents\n\n")
+						}
+					>
+						<div className="flex items-center gap-2">
+							<ListTree size={14} />
+							<span>Table of contents</span>
+						</div>
+					</DropdownItem>
+					<DropdownItem
+						onClick={() => commands.insertHorizontalRule?.()}
+					>
+						<div className="flex items-center gap-2">
+							<Minus size={14} />
+							<span>Horizontal rule</span>
+						</div>
+					</DropdownItem>
+				</div>
+			</div>
+		</ToolbarDropdown>
+	);
+}
+
+/* ── Lists dropdown (bullet, ordered, checklist) ─────────────── */
+
+function ListDropdown() {
+	const commands = useCommands();
+	const active = useActive();
+
+	return (
+		<ToolbarDropdown
+			trigger={
+				<span className="flex items-center gap-1.5">
+					<List size={14} />
+					<span className="text-xs">
+						Lists
+					</span>
+				</span>
+			}
+		>
+			<DropdownItem
+				onClick={() => commands.toggleBulletList()}
+				active={active.bulletList()}
+			>
+				<div className="flex items-center gap-2">
+					<List size={14} />
+					<span>Bullet list</span>
+				</div>
+			</DropdownItem>
+			<DropdownItem
+				onClick={() => commands.toggleOrderedList()}
+				active={active.orderedList()}
+			>
+				<div className="flex items-center gap-2">
+					<ListOrdered size={14} />
+					<span>Numbered list</span>
+				</div>
+			</DropdownItem>
+			<DropdownItem
+				onClick={() => commands.toggleTaskList()}
+				active={active.taskList()}
+			>
+				<div className="flex items-center gap-2">
+					<CheckSquare size={14} />
+					<span>Checklist</span>
+				</div>
+			</DropdownItem>
+		</ToolbarDropdown>
+	);
+}
+
+/* ── Text formatting dropdown for small / mid screens ────────── */
+
+function TextFormattingDropdown() {
+	const commands = useCommands();
+	const active = useActive();
+
+	return (
+		<ToolbarDropdown
+			trigger={
+				<span className="flex items-center gap-1.5">
+					<Type size={14} />
+					<span className="text-xs">
+						Text
+					</span>
+				</span>
+			}
+		>
+			{/* Font family */}
+			<div className="px-2 pb-1">
+				<p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+					Font family
+				</p>
+				{FONT_FAMILIES.map((font) => (
+					<DropdownItem
+						key={font.label}
+						onClick={() => commands.setFontFamily?.(font.value)}
+					>
+						<span
+							className="text-sm"
+							style={font.value ? { fontFamily: font.value } : {}}
+						>
+							{font.label}
+						</span>
+					</DropdownItem>
+				))}
+			</div>
+
+			<div className="border-t border-[hsl(var(--border))] my-1" />
+
+			{/* Basic styles */}
+			<DropdownItem
+				onClick={() => commands.toggleBold()}
+				active={active.bold()}
+			>
+				<div className="flex items-center gap-2">
+					<Bold size={14} />
+					<span>Bold</span>
+				</div>
+			</DropdownItem>
+			<DropdownItem
+				onClick={() => commands.toggleItalic()}
+				active={active.italic()}
+			>
+				<div className="flex items-center gap-2">
+					<Italic size={14} />
+					<span>Italic</span>
+				</div>
+			</DropdownItem>
+			<DropdownItem
+				onClick={() => commands.toggleUnderline()}
+				active={active.underline()}
+			>
+				<div className="flex items-center gap-2">
+					<Underline size={14} />
+					<span>Underline</span>
+				</div>
+			</DropdownItem>
+			<DropdownItem
+				onClick={() => commands.toggleStrike()}
+				active={active.strike()}
+			>
+				<div className="flex items-center gap-2">
+					<Strikethrough size={14} />
+					<span>Strikethrough</span>
+				</div>
+			</DropdownItem>
+
+			<div className="border-t border-[hsl(var(--border))] my-1" />
+
+			{/* Sub / Sup */}
+			<DropdownItem
+				onClick={() => commands.toggleSubscript()}
+				active={active.sub()}
+			>
+				<div className="flex items-center gap-2">
+					<Subscript size={14} />
+					<span>Subscript</span>
+				</div>
+			</DropdownItem>
+			<DropdownItem
+				onClick={() => commands.toggleSuperscript()}
+				active={active.sup()}
+			>
+				<div className="flex items-center gap-2">
+					<Superscript size={14} />
+					<span>Superscript</span>
+				</div>
+			</DropdownItem>
+
+			<div className="border-t border-[hsl(var(--border))] my-1" />
+
+			{/* Text case */}
+			<DropdownItem onClick={() => commands.setTextCase("uppercase")}>
+				UPPERCASE
+			</DropdownItem>
+			<DropdownItem onClick={() => commands.setTextCase("lowercase")}>
+				lowercase
+			</DropdownItem>
+			<DropdownItem onClick={() => commands.setTextCase("capitalize")}>
+				Capitalize Each Word
+			</DropdownItem>
+			<DropdownItem onClick={() => commands.setTextCase("small-caps")}>
+				Small caps
+			</DropdownItem>
+			<DropdownItem onClick={() => commands.setTextCase("none")}>
+				Clear text case
+			</DropdownItem>
+		</ToolbarDropdown>
+	);
+}
+
 /* ── Main Toolbar ──────────────────────────────────────────── */
 
 export function EditorToolbar() {
@@ -521,99 +774,126 @@ export function EditorToolbar() {
 	const active = useActive();
 
 	return (
-		<div className="flex flex-wrap items-center gap-0.5 px-3 py-1.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--editor-toolbar))]">
+		<div className="flex flex-wrap items-center gap-0.5 px-3 py-1.5 bg-[hsl(var(--editor-toolbar))]">
+			{/* History */}
+			<ToolbarButton
+				onClick={() => commands.undo?.()}
+				disabled={commands.undo?.enabled ? !commands.undo.enabled() : false}
+				title="Undo (Ctrl+Z)"
+			>
+				<Undo2 size={15} />
+			</ToolbarButton>
+			<ToolbarButton
+				onClick={() => commands.redo?.()}
+				disabled={commands.redo?.enabled ? !commands.redo.enabled() : false}
+				title="Redo (Ctrl+Shift+Z)"
+			>
+				<Redo2 size={15} />
+			</ToolbarButton>
+
+			<ToolbarDivider />
+
 			{/* Heading / Paragraph dropdown */}
 			<HeadingDropdown />
 
+			{/* Text formatting - responsive */}
+			<div className="hidden lg:flex items-center gap-0.5">
+				<FontFamilyDropdown />
+
+				<ToolbarDivider />
+
+				<ToolbarButton
+					onClick={() => commands.toggleBold()}
+					active={active.bold()}
+					title="Bold (Ctrl+B)"
+				>
+					<Bold size={15} />
+				</ToolbarButton>
+				<ToolbarButton
+					onClick={() => commands.toggleItalic()}
+					active={active.italic()}
+					title="Italic (Ctrl+I)"
+				>
+					<Italic size={15} />
+				</ToolbarButton>
+				<ToolbarButton
+					onClick={() => commands.toggleUnderline()}
+					active={active.underline()}
+					title="Underline (Ctrl+U)"
+				>
+					<Underline size={15} />
+				</ToolbarButton>
+				<ToolbarButton
+					onClick={() => commands.toggleStrike()}
+					active={active.strike()}
+					title="Strikethrough"
+				>
+					<Strikethrough size={15} />
+				</ToolbarButton>
+
+				<ToolbarDivider />
+
+				<ToolbarButton
+					onClick={() => commands.toggleSubscript()}
+					active={active.sub()}
+					title="Subscript"
+				>
+					<Subscript size={15} />
+				</ToolbarButton>
+				<ToolbarButton
+					onClick={() => commands.toggleSuperscript()}
+					active={active.sup()}
+					title="Superscript"
+				>
+					<Superscript size={15} />
+				</ToolbarButton>
+
+				<TextCaseDropdown />
+
+				<ToolbarDivider />
+
+				<HighlightDropdown />
+				<TextColorDropdown />
+				<TableCellBackgroundDropdown />
+			</div>
+			<div className="lg:hidden">
+				<TextFormattingDropdown />
+			</div>
+
 			<ToolbarDivider />
 
-			{/* Text formatting */}
-			<ToolbarButton
-				onClick={() => commands.toggleBold()}
-				active={active.bold()}
-				title="Bold (Ctrl+B)"
-			>
-				<Bold size={15} />
-			</ToolbarButton>
-			<ToolbarButton
-				onClick={() => commands.toggleItalic()}
-				active={active.italic()}
-				title="Italic (Ctrl+I)"
-			>
-				<Italic size={15} />
-			</ToolbarButton>
-			<ToolbarButton
-				onClick={() => commands.toggleUnderline()}
-				active={active.underline()}
-				title="Underline (Ctrl+U)"
-			>
-				<Underline size={15} />
-			</ToolbarButton>
-			<ToolbarButton
-				onClick={() => commands.toggleStrike()}
-				active={active.strike()}
-				title="Strikethrough"
-			>
-				<Strikethrough size={15} />
-			</ToolbarButton>
-
-			<ToolbarDivider />
-
-			{/* Sub / Super */}
-			<ToolbarButton
-				onClick={() => commands.toggleSubscript()}
-				active={active.sub()}
-				title="Subscript"
-			>
-				<Subscript size={15} />
-			</ToolbarButton>
-			<ToolbarButton
-				onClick={() => commands.toggleSuperscript()}
-				active={active.sup()}
-				title="Superscript"
-			>
-				<Superscript size={15} />
-			</ToolbarButton>
-
-			<TextCaseDropdown />
-
-			<ToolbarDivider />
-
-			{/* Highlight & Link */}
-			<HighlightDropdown />
-			<TextColorDropdown />
-			<TableCellBackgroundDropdown />
-			<LinkButton />
-
-			<ToolbarDivider />
-
-			{/* Lists */}
-			<ToolbarButton
-				onClick={() => commands.toggleBulletList()}
-				active={active.bulletList()}
-				title="Bullet List"
-			>
-				<List size={15} />
-			</ToolbarButton>
-			<ToolbarButton
-				onClick={() => commands.toggleOrderedList()}
-				active={active.orderedList()}
-				title="Ordered List"
-			>
-				<ListOrdered size={15} />
-			</ToolbarButton>
-			<ToolbarButton
-				onClick={() => commands.toggleTaskList()}
-				active={active.taskList()}
-				title="Checkbox List"
-			>
-				<CheckSquare size={15} />
-			</ToolbarButton>
+			{/* Lists - responsive */}
+			<div className="hidden lg:flex items-center gap-0.5">
+				<ToolbarButton
+					onClick={() => commands.toggleBulletList()}
+					active={active.bulletList()}
+					title="Bullet List"
+				>
+					<List size={15} />
+				</ToolbarButton>
+				<ToolbarButton
+					onClick={() => commands.toggleOrderedList()}
+					active={active.orderedList()}
+					title="Ordered List"
+				>
+					<ListOrdered size={15} />
+				</ToolbarButton>
+				<ToolbarButton
+					onClick={() => commands.toggleTaskList()}
+					active={active.taskList()}
+					title="Checkbox List"
+				>
+					<CheckSquare size={15} />
+				</ToolbarButton>
+			</div>
+			<div className="lg:hidden">
+				<ListDropdown />
+			</div>
 
 			<ToolbarDivider />
 
 			{/* Alignment - Responsive: dropdown on small/medium, buttons on large */}
-			<div className="hidden md:flex items-center gap-0.5">
+			<div className="hidden lg:flex items-center gap-0.5">
 				<ToolbarButton onClick={() => commands.leftAlign()} title="Align Left">
 					<AlignLeft size={15} />
 				</ToolbarButton>
@@ -630,27 +910,20 @@ export function EditorToolbar() {
 					<AlignJustify size={15} />
 				</ToolbarButton>
 			</div>
-			<div className="md:hidden">
+			<div className="lg:hidden">
 				<AlignmentDropdown commands={commands} active={active} />
 			</div>
 
 			<ToolbarDivider />
 
-			{/* Insertions */}
-			<TableGridPicker />
-			<ImageButton />
-			<ToolbarButton
-				onClick={() => commands.insertText("## Table of Contents\n\n")}
-				title="Insert Table of Contents"
-			>
-				<ListTree size={15} />
-			</ToolbarButton>
-			<ToolbarButton
-				onClick={() => commands.insertHorizontalRule()}
-				title="Horizontal Rule"
-			>
-				<Minus size={15} />
-			</ToolbarButton>
+			{/* Link + Insert - responsive */}
+			<div className="hidden lg:flex items-center gap-0.5">
+				<LinkButton />
+				<InsertDropdown />
+			</div>
+			<div className="lg:hidden">
+				<InsertDropdown includeLink />
+			</div>
 		</div>
 	);
 }

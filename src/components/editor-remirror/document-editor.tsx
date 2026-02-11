@@ -7,7 +7,7 @@ import {
 	OrderedListExtension, TaskListExtension, ImageExtension, MarkdownExtension, HardBreakExtension, LinkExtension, 
 	PlaceholderExtension, NodeFormattingExtension, TableExtension, BlockquoteExtension, CodeExtension, CodeBlockExtension, 
 	HorizontalRuleExtension, DropCursorExtension, GapCursorExtension, SubExtension, SupExtension, TextHighlightExtension, 
-	TextColorExtension, TextCaseExtension 
+	TextColorExtension, TextCaseExtension, FontFamilyExtension, HistoryExtension 
 } from "remirror/extensions";
 import "remirror/styles/all.css";
 import '@/styles/remirror.css'
@@ -52,6 +52,8 @@ export function DocumentEditor() {
 			new TextHighlightExtension({}),
 			new TextColorExtension({}),
 			new TextCaseExtension({}),
+			new FontFamilyExtension({}),
+			new HistoryExtension({}),
 			new AiEditExtension(),
 		],
 		content: defaultContent,
