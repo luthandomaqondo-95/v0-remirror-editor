@@ -75,6 +75,7 @@ export function StepFullAFS({
         },
         // staleTime: Number.POSITIVE_INFINITY,
     })
+    console.log("initialContent", initialContent)
     const { manager, state, setState } = useRemirror(
         {
             extensions: () => [
@@ -464,13 +465,13 @@ export function StepFullAFS({
                             <>
                                 {/* Editor interface */}
                                 <div
-                                    className="flex-1 overflow-auto relative mt-4"
+                                    className="flex-1 overflow-auto relative"
                                     style={{
                                         transform: `scale(${Number.parseInt(zoom) / 100})`,
                                         transformOrigin: "top center",
                                     }}
                                 >
-                                    <div className="max-w-4xl mx-auto px-16 py-6 bg-primary/5 rounded-xl">
+                                    <div className="max-w-4xl mx-auto px-16 py-6 bg-primary/5 rounded-xl mt-4 mb-16">
                                         <EditorComponent />
                                     </div>
                                     <InlineAIPopup />
