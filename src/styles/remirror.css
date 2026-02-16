@@ -187,6 +187,15 @@
     --rmr-color-selection-background: hsl(var(--primary) / 0.15);
     --rmr-color-selection-shadow: transparent;
     --rmr-color-selection-text: inherit;
+    --rmr-color-table-selected-cell: hsl(var(--primary) / 0.2);
+    --rmr-color-table-selected-border: hsl(var(--primary));
+}
+
+/* Table cell selection (click-drag rows/columns) - ensure highlight is visible */
+.remirror-editor.ProseMirror th.selectedCell,
+.remirror-editor.ProseMirror td.selectedCell {
+    background-color: hsl(var(--primary) / 0.2) !important;
+    border-color: hsl(var(--primary)) !important;
 }
 
 /* ─── AI Edit Decorations ─── */
