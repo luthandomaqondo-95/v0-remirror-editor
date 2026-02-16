@@ -25,6 +25,7 @@ import { AiEditExtension } from "@/components/editor-remirror/extensions/ai-edit
 import { EditorToolbar } from "@/components/editor-remirror/editor-toolbar";
 import { TableContextMenu } from "@/components/editor-remirror/table-context-menu";
 import { InlineAIPopup } from "@/components/editor-remirror/inline-ai-popup";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 
@@ -44,11 +45,11 @@ export function StepFullAFS({
     // 	pages: 
     // })
 
-    const [currentPage, setCurrentPage] = useState(1)
+    const isMobile = useIsMobile();
     const [zoom, setZoom] = useState("100")
-    const [isChatOpen, setIsChatOpen] = useState(true);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+
     const [pages, setPages] = useState<PageData[]>([])
-    const [hasTableOfContents, setHasTableOfContents] = useState(false);
     const [hasUnsavedChangesInThisStep, setHasUnsavedChangesInThisStep] = useState(false);
     const [selection, setSelection] = useState<{ text: string, start: number, end: number } | null>(null);
     const [editingRange, setEditingRange] = useState<{ start: number, end: number } | null>(null);
@@ -75,7 +76,6 @@ export function StepFullAFS({
         },
         // staleTime: Number.POSITIVE_INFINITY,
     })
-    console.log("initialContent", initialContent)
     const { manager, state, setState } = useRemirror(
         {
             extensions: () => [
@@ -112,6 +112,14 @@ export function StepFullAFS({
             stringHandler: "markdown",
         },
     );
+    useEffect(() => {
+        const mql = window.matchMedia("(max-width: 767px)");
+        const sync = () => setIsChatOpen(!mql.matches);
+        sync();
+        mql.addEventListener("change", sync);
+        return () => mql.removeEventListener("change", sync);
+    }, []);
+
     // Load content into editor when it arrives
     // Add this effect to push data into the editor once it's loaded
     useEffect(() => {
