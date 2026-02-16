@@ -9,11 +9,12 @@ interface A4PreviewProps {
 	content: string,
 	orientation: "portrait" | "landscape"
 	onPageChange?: (page: number) => void
+	zoom?: number
 }
 
 const PAGE_GAP = 24
 
-export function A4Preview({ content, orientation, onPageChange }: A4PreviewProps) {
+export function A4Preview({ content, orientation, onPageChange, zoom: zoomPercent = 100 }: A4PreviewProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [pages, setPages] = useState<string[]>([content]);
 	const [scale, setScale] = useState(1);
@@ -44,8 +45,9 @@ export function A4Preview({ content, orientation, onPageChange }: A4PreviewProps
 		return () => ro.disconnect()
 	}, [A4_WIDTH])
 
-	const scaledWidth = A4_WIDTH * scale
-	const scaledHeight = (pages.length * A4_HEIGHT + (pages.length - 1) * PAGE_GAP) * scale
+	const effectiveScale = scale * (zoomPercent / 100)
+	const scaledWidth = A4_WIDTH * effectiveScale
+	const scaledHeight = (pages.length * A4_HEIGHT + (pages.length - 1) * PAGE_GAP) * effectiveScale
 
 	return (
 		<div ref={containerRef} className="w-full flex justify-center min-h-0">
@@ -60,7 +62,7 @@ export function A4Preview({ content, orientation, onPageChange }: A4PreviewProps
 					className="absolute left-1/2 top-0 flex flex-col items-center"
 					style={{
 						width: A4_WIDTH,
-						transform: `translateX(-50%) scale(${scale})`,
+						transform: `translateX(-50%) scale(${effectiveScale})`,
 						transformOrigin: "top center",
 						gap: PAGE_GAP,
 					}}
