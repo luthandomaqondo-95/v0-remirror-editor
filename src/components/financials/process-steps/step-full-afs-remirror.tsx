@@ -524,11 +524,11 @@ export function StepFullAFS({
                 open={activeTab === "preview"}
                 onOpenChange={(open) => setActiveTab(open ? "preview" : "edit")}
             >
-                <DialogHeader>
+                {/* <DialogHeader>
                     <DialogTitle>Preview</DialogTitle>
-                </DialogHeader>
+                </DialogHeader> */}
                 <DialogContent
-                className={`max-h-[95vh] max-w-5xl overflow-auto`}
+                    className={`max-h-[95vh] max-w-5xl overflow-auto`}
                 >
                     <div className="flex flex-col bg-muted/20">
                         <div
