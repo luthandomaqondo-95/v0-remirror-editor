@@ -27,7 +27,7 @@ import { TableContextMenu } from "@/components/editor-remirror/table-context-men
 import { InlineAIPopup } from "@/components/editor-remirror/inline-ai-popup";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ToggleSwitch } from "@/components/ui-custom/toggle-switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { A4Preview } from "@/components/editor-remirror/md-preview";
 
 
@@ -255,7 +255,7 @@ export function StepFullAFS({
                     </TooltipProvider>
                 </div>
                 {/* Editor/Preview Tabs - fills remaining space */}
-                <div className={`h-full flex-1 flex flex-col bg-gray-100 dark:bg-gray-900 min-w-0 min-h-0 ${isChatOpen && isMobile ? "hidden" : ""}`}>
+                <div className={`h-full flex-1 flex flex-col bg-background min-w-0 min-h-0 ${isChatOpen && isMobile ? "hidden" : ""}`}>
                     {/* Sticky Toolbar - Outside the transform container */}
                     <div className="flex flex-row justify-between border-b rounded-2xl">
                         <TooltipProvider >
@@ -509,7 +509,7 @@ export function StepFullAFS({
                                         transformOrigin: "top center",
                                     }}
                                 >
-                                    <div className="max-w-4xl mx-auto px-2 sm:px-4 md:px-8 lg:px-16 py-6 bg-background rounded-xl mt-4 mb-16">
+                                    <div className="max-w-4xl mx-auto px-2 sm:px-4 md:px-8 lg:px-16 py-6 bg-background shadow-2xl border border-gray-300/60 dark:border-gray-800 rounded-xl mt-4 mb-16">
                                         <EditorComponent />
                                     </div>
                                     <InlineAIPopup />
@@ -524,25 +524,29 @@ export function StepFullAFS({
                 open={activeTab === "preview"}
                 onOpenChange={(open) => setActiveTab(open ? "preview" : "edit")}
             >
-                {/* <DialogHeader>
-                    <DialogTitle>Preview</DialogTitle>
-                </DialogHeader> */}
                 <DialogContent
-                    className={`max-h-[95vh] max-w-5xl overflow-auto`}
+                    className="max-h-[95vh] overflow-hidden flex flex-col min-w-[60%]"
                 >
-                    <div className="flex flex-col bg-muted/20">
-                        <div
-                            className="p-6"
+                    <DialogHeader>
+                        <DialogTitle>Preview</DialogTitle>
+                        <DialogDescription>
+                            Preview the document in A4 format.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="w-full flex-1 flex flex-col min-h-0 overflow-hidden bg-muted/20">
+                        <div className="w-full max-w-full flex-1 overflow-auto flex flex-col items-stretch px-0">
+                            <div className="w-full min-w-0 flex-1 flex flex-col"
                             style={{
-                                transform: `scale(${Number.parseInt(zoom) / 100})`,
+                                transform: `scale(${(Number.parseInt(zoom)) / 100})`,
                                 transformOrigin: "top center",
                             }}
-                        >
-                            <A4Preview
-                                orientation={defaultPageSettings.orientation}
-                                content={initialContent || ""}
-                                onPageChange={setCurrentPage}
-                            />
+                            >
+                                <A4Preview
+                                    orientation={defaultPageSettings.orientation}
+                                    content={initialContent || ""}
+                                    onPageChange={setCurrentPage}
+                                />
+                            </div>
                         </div>
                     </div>
                 </DialogContent>
