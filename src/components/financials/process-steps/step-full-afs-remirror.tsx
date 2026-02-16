@@ -1,7 +1,7 @@
 import { Activity, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronsLeft, ChevronsRight, List, Plus, Scissors, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Edit, Eye, List, Plus, Scissors, ZoomIn, ZoomOut } from "lucide-react";
 import { Transaction } from "remirror";
 import { EditorComponent, Remirror, useRemirror } from "@remirror/react";
 import {
@@ -26,6 +26,9 @@ import { EditorToolbar } from "@/components/editor-remirror/editor-toolbar";
 import { TableContextMenu } from "@/components/editor-remirror/table-context-menu";
 import { InlineAIPopup } from "@/components/editor-remirror/inline-ai-popup";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ToggleSwitch } from "@/components/ui-custom/toggle-switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { A4Preview } from "@/components/editor-remirror/md-preview";
 
 
 
@@ -48,11 +51,13 @@ export function StepFullAFS({
     const isMobile = useIsMobile();
     const [zoom, setZoom] = useState("100")
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState("editor")
 
     const [pages, setPages] = useState<PageData[]>([])
     const [hasUnsavedChangesInThisStep, setHasUnsavedChangesInThisStep] = useState(false);
     const [selection, setSelection] = useState<{ text: string, start: number, end: number } | null>(null);
     const [editingRange, setEditingRange] = useState<{ start: number, end: number } | null>(null);
+    const [currentPage, setCurrentPage] = useState(1)
 
     // // Computed full content for preview/export
     // const fullContent = useMemo(() => pages.map((p) => p.content).join("\n\n---\n\n"), [pages]);
@@ -200,7 +205,6 @@ export function StepFullAFS({
         }
     }, [isError])
 
-
     return (
         <div className="h-full flex-1 flex overflow-hidden">
             <Remirror
@@ -212,7 +216,7 @@ export function StepFullAFS({
                 <div
                     className={cn(
                         "relative h-full flex flex-col border-r bg-background transition-all duration-300 ease-in-out overflow-hidden shrink-0",
-                        isChatOpen ? "w-[400px]" : "w-0 border-r-0"
+                        isChatOpen ? "w-full sm:w-80 md:w-96" : "w-0 border-r-0"
                     )}
                 >
                     <Activity
@@ -250,9 +254,8 @@ export function StepFullAFS({
                         </Tooltip>
                     </TooltipProvider>
                 </div>
-
                 {/* Editor/Preview Tabs - fills remaining space */}
-                <div className="h-full flex-1 flex flex-col min-w-0 min-h-0">
+                <div className={`h-full flex-1 flex flex-col bg-gray-100 dark:bg-gray-900 min-w-0 min-h-0 ${isChatOpen && isMobile ? "hidden" : ""}`}>
                     {/* Sticky Toolbar - Outside the transform container */}
                     <div className="flex flex-row justify-between border-b rounded-2xl">
                         <TooltipProvider >
@@ -261,7 +264,7 @@ export function StepFullAFS({
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-12 w-12 cursor-pointer rounded-full"
+                                        className={`h-12 w-12 cursor-pointer rounded-full ${(isChatOpen && !isMobile) ? "hidden" : ""}`}
                                         onClick={() => setIsChatOpen(!isChatOpen)}
                                     >
                                         {isChatOpen ? (
@@ -276,6 +279,19 @@ export function StepFullAFS({
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
+                        <ToggleSwitch
+                            className="h-8 w-12 sm:h-10 sm:w-16"
+                            checked={activeTab === "preview"}
+                            onCheckedChange={(checked) =>
+                                setActiveTab(checked ? "preview" : "edit")
+                            }
+                            options={[
+                                { value: "edit", icon: <Edit className="h-4 w-4" /> },
+                                { value: "preview", icon: <Eye className="h-4 w-4" /> }
+                            ]}
+                        />
+
+
                         <EditorToolbar />
 
                         <div className=" items-center justify-between shrink-0">
@@ -487,13 +503,13 @@ export function StepFullAFS({
                             <>
                                 {/* Editor interface */}
                                 <div
-                                    className="flex-1 overflow-auto relative"
+                                    className={`flex-1 overflow-auto relative `}
                                     style={{
                                         transform: `scale(${Number.parseInt(zoom) / 100})`,
                                         transformOrigin: "top center",
                                     }}
                                 >
-                                    <div className="max-w-4xl mx-auto px-2 sm:px-4 md:px-8 lg:px-16 py-6 bg-primary/5 rounded-xl mt-4 mb-16">
+                                    <div className="max-w-4xl mx-auto px-2 sm:px-4 md:px-8 lg:px-16 py-6 bg-background rounded-xl mt-4 mb-16">
                                         <EditorComponent />
                                     </div>
                                     <InlineAIPopup />
@@ -504,6 +520,33 @@ export function StepFullAFS({
                     }
                 </div>
             </Remirror>
+            <Dialog
+                open={activeTab === "preview"}
+                onOpenChange={(open) => setActiveTab(open ? "preview" : "edit")}
+            >
+                <DialogHeader>
+                    <DialogTitle>Preview</DialogTitle>
+                </DialogHeader>
+                <DialogContent
+                className={`max-h-[95vh] max-w-5xl overflow-auto`}
+                >
+                    <div className="flex flex-col bg-muted/20">
+                        <div
+                            className="p-6"
+                            style={{
+                                transform: `scale(${Number.parseInt(zoom) / 100})`,
+                                transformOrigin: "top center",
+                            }}
+                        >
+                            <A4Preview
+                                orientation={defaultPageSettings.orientation}
+                                content={initialContent || ""}
+                                onPageChange={setCurrentPage}
+                            />
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
