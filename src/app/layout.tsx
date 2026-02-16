@@ -6,8 +6,15 @@ import { ThemeProvider } from "@/providers/theme-provider"
 import { QueryProvider } from "@/providers/query-provider"
 import { Toaster } from "@/components/ui/sonner"
 
-const _geist = Geist({ subsets: ['latin'] })
-const _geistMono = Geist_Mono({ subsets: ['latin'] })
+const geistSans = Geist({
+    variable: "--font-sans",
+    subsets: ["latin"],
+})
+
+const geistMono = Geist_Mono({
+    variable: "--font-mono",
+    subsets: ["latin"],
+})
 
 export const metadata: Metadata = {
 	title: 'Document Editor - Markdown WYSIWYG',
@@ -21,8 +28,8 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning>
-			<body className="font-sans antialiased">
-				<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+			<body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
+				<ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
 					<QueryProvider>
 						{children}
 						<Toaster position="top-center"/>

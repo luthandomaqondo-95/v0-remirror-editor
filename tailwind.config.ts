@@ -1,136 +1,131 @@
-import type { Config } from 'tailwindcss'
-import plugin from 'tailwindcss/plugin';
+import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: ['class'],
-  content: [
-		"./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-		"./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-		"./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-    '*.{js,ts,jsx,tsx,mdx}',
-  ],
-  theme: {
-    extend: {
-      colors: {
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
-        },
-        popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
-        },
-        primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
-        },
-        secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
-        },
-        muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
-        },
-        accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
-        },
-        destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
-        },
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        chart: {
-          '1': 'hsl(var(--chart-1))',
-          '2': 'hsl(var(--chart-2))',
-          '3': 'hsl(var(--chart-3))',
-          '4': 'hsl(var(--chart-4))',
-          '5': 'hsl(var(--chart-5))',
-        },
-        sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          primary: 'hsl(var(--sidebar-primary))',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          ring: 'hsl(var(--sidebar-ring))',
-        },
-      },
-      borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
-      },
-      keyframes: {
-        'accordion-down': {
-          from: {
-            height: '0',
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)',
-          },
-        },
-        'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)',
-          },
-          to: {
-            height: '0',
-          },
-        },
-      },
-      animation: {
-        'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out',
-      },
-
-      // // You can define custom colors here to use in the plugin
-      // remirror: {
-      //   placeholder: '#9ca3af',
-      //   border: '#e5e7eb',
-      // }
+    darkMode: ["class"],
+    safelist: [
+        "animate-in",
+        "animate-out",
+        "fade-in-0",
+        "fade-out-0",
+        "zoom-in-95",
+        "zoom-out-95",
+        "slide-in-from-top-2",
+        "slide-in-from-bottom-2",
+        "slide-in-from-left-2",
+        "slide-in-from-right-2",
+    ],
+    content: [
+        "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+        "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+        "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    ],
+    theme: {
+        extend: {
+            colors: {
+                background: 'hsl(var(--background))',
+                foreground: 'hsl(var(--foreground))',
+                card: {
+                    DEFAULT: 'hsl(var(--card))',
+                    foreground: 'hsl(var(--card-foreground))',
+                },
+                popover: {
+                    DEFAULT: 'hsl(var(--popover))',
+                    foreground: 'hsl(var(--popover-foreground))',
+                },
+                primary: {
+                    DEFAULT: 'hsl(var(--primary))',
+                    foreground: 'hsl(var(--primary-foreground))',
+                },
+                secondary: {
+                    DEFAULT: 'hsl(var(--secondary))',
+                    foreground: 'hsl(var(--secondary-foreground))',
+                },
+                muted: {
+                    DEFAULT: 'hsl(var(--muted))',
+                    foreground: 'hsl(var(--muted-foreground))',
+                },
+                accent: {
+                    DEFAULT: 'hsl(var(--accent))',
+                    foreground: 'hsl(var(--accent-foreground))',
+                },
+                destructive: {
+                    DEFAULT: 'hsl(var(--destructive))',
+                    foreground: 'hsl(var(--destructive-foreground))',
+                },
+                border: 'hsl(var(--border))',
+                input: 'hsl(var(--input))',
+                ring: 'hsl(var(--ring))',
+                chart: {
+                    '1': 'hsl(var(--chart-1))',
+                    '2': 'hsl(var(--chart-2))',
+                    '3': 'hsl(var(--chart-3))',
+                    '4': 'hsl(var(--chart-4))',
+                    '5': 'hsl(var(--chart-5))',
+                },
+                sidebar: {
+                    DEFAULT: 'hsl(var(--sidebar-background))',
+                    foreground: 'hsl(var(--sidebar-foreground))',
+                    primary: 'hsl(var(--sidebar-primary))',
+                    'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+                    accent: 'hsl(var(--sidebar-accent))',
+                    'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+                    border: 'hsl(var(--sidebar-border))',
+                    ring: 'hsl(var(--sidebar-ring))',
+                },
+                'light-blue': {
+                    50: '#f0f9ff',
+                    100: '#e0f2fe',
+                    200: '#bae6fd',
+                    300: '#7dd3fc',
+                    400: '#38bdf8',
+                    500: '#0ea5e9',
+                    600: '#0284c7',
+                    700: '#0369a1',
+                    800: '#075985',
+                    900: '#0c4a6e',
+                }
+            },
+            borderRadius: {
+                lg: 'var(--radius)',
+                md: 'calc(var(--radius) - 2px)',
+                sm: 'calc(var(--radius) - 4px)'
+            },
+            keyframes: {
+                'accordion-down': {
+                    from: {
+                        height: '0'
+                    },
+                    to: {
+                        height: 'var(--radix-accordion-content-height)'
+                    }
+                },
+                'accordion-up': {
+                    from: {
+                        height: 'var(--radix-accordion-content-height)'
+                    },
+                    to: {
+                        height: '0'
+                    }
+                },
+                shimmer: {
+                    '0%': {
+                        'background-position': '-100% 0'
+                    },
+                    '100%': {
+                        'background-position': '100% 0'
+                    }
+                }
+            },
+            animation: {
+                'accordion-down': 'accordion-down 0.2s ease-out',
+                'accordion-up': 'accordion-up 0.2s ease-out',
+                shimmer: 'shimmer 3s infinite linear'
+            }
+        }
     },
-  },
-  plugins: [
-    require('tailwindcss-animate'),
-    require('@tailwindcss/typography'),
-    // plugin(function({ addComponents, theme }) {
-    //   addComponents({
-    //     /* Targets the main editor container */
-    //     '.remirror-editor': {
-    //       border: `1px solid ${theme('colors.slate.200')}`,
-    //       borderRadius: theme('borderRadius.md'),
-    //       padding: theme('spacing.4'),
-    //       '&:focus': {
-    //         outline: 'none',
-    //         ring: `2px solid ${theme('colors.blue.500')}`,
-    //       },
-    //     },
-    //     /* Specific state: Empty/Placeholder */
-    //     '.remirror-is-empty:first-child::before': {
-    //       content: 'attr(data-placeholder)',
-    //       color: theme('colors.gray.400'),
-    //       float: 'left',
-    //       pointerEvents: 'none',
-    //       height: '0',
-    //       fontStyle: 'italic',
-    //     },
-    //     /* Styling the floating/bubble menus */
-    //     '.remirror-floating-menu': {
-    //       backgroundColor: theme('colors.white'),
-    //       boxShadow: theme('boxShadow.lg'),
-    //       border: `1px solid ${theme('colors.gray.100')}`,
-    //       padding: theme('spacing.1'),
-    //     }
-    //   })
-    // }),
-  ],
-}
-export default config
+    plugins: [
+        require("tailwindcss-animate"),
+        require("@tailwindcss/typography"),
+    ],
+};
+export default config;

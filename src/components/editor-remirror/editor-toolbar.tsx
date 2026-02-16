@@ -513,7 +513,7 @@ function InsertDropdown({ includeLink = false }: { includeLink?: boolean }) {
 			trigger={
 				<span className="flex items-center gap-1.5">
 					<Plus size={14} />
-					<span className="text-xs">
+					<span className="text-xs hidden sm:inline">
 						Insert
 					</span>
 				</span>
@@ -606,14 +606,7 @@ function ListDropdown() {
 
 	return (
 		<ToolbarDropdown
-			trigger={
-				<span className="flex items-center gap-1.5">
-					<List size={14} />
-					<span className="text-xs">
-						Lists
-					</span>
-				</span>
-			}
+			trigger={<List size={14} />}
 		>
 			<DropdownItem
 				onClick={() => commands.toggleBulletList()}
@@ -657,12 +650,50 @@ function TextFormattingDropdown() {
 			trigger={
 				<span className="flex items-center gap-1.5">
 					<Type size={14} />
-					<span className="text-xs">
+					{/* <span className="text-xs">
 						Text
-					</span>
+					</span> */}
 				</span>
 			}
 		>
+			{/* Text Headings - top section */}
+			<div className="px-2 pb-1">
+				<p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
+					Headings
+				</p>
+				<DropdownItem
+					onClick={() => {
+						commands.convertParagraph?.();
+						if (!commands.convertParagraph) {
+							commands.toggleHeading?.({ level: 1 });
+						}
+					}}
+					active={!active.heading()}
+				>
+					<span className="text-sm">Paragraph</span>
+				</DropdownItem>
+				<DropdownItem
+					onClick={() => commands.toggleHeading({ level: 1 })}
+					active={active.heading({ level: 1 })}
+				>
+					<span className="text-lg font-bold">Heading 1</span>
+				</DropdownItem>
+				<DropdownItem
+					onClick={() => commands.toggleHeading({ level: 2 })}
+					active={active.heading({ level: 2 })}
+				>
+					<span className="text-base font-semibold">Heading 2</span>
+				</DropdownItem>
+				<DropdownItem
+					onClick={() => commands.toggleHeading({ level: 3 })}
+					active={active.heading({ level: 3 })}
+				>
+					<span className="text-sm font-semibold">Heading 3</span>
+				</DropdownItem>
+			</div>
+
+			<div className="border-t border-[hsl(var(--border))] my-1" />
+
 			{/* Font family */}
 			<div className="px-2 pb-1">
 				<p className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1">
@@ -793,8 +824,10 @@ export function EditorToolbar() {
 
 			<ToolbarDivider />
 
-			{/* Heading / Paragraph dropdown */}
-			<HeadingDropdown />
+			{/* Heading / Paragraph dropdown - hidden on mid/small, Headings are in Text dropdown */}
+			<div className="hidden lg:flex">
+				<HeadingDropdown />
+			</div>
 
 			{/* Text formatting - responsive */}
 			<div className="hidden lg:flex items-center gap-0.5">

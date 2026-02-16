@@ -8,7 +8,7 @@
     line-height: 1.7;
     color: hsl(var(--foreground));
     caret-color: hsl(var(--primary));
-    background-color: hsl(var(--white));
+    background-color: hsl(var(--background));
     border-radius: 1rem;
     -ms-overflow-style: none;  /* IE/Edge */
     scrollbar-width: none;     /* Firefox */

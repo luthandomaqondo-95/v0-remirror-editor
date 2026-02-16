@@ -203,12 +203,13 @@ export function StepFullAFS({
                 {/* Chat panel - sits alongside entire Editor/Preview area */}
                 <div
                     className={cn(
-                        "h-full flex flex-col border-r bg-background transition-all duration-300 ease-in-out overflow-hidden shrink-0",
-                        isChatOpen ? "w-[450px]" : "w-0 border-r-0"
+                        "relative h-full flex flex-col border-r bg-background transition-all duration-300 ease-in-out overflow-hidden shrink-0",
+                        isChatOpen ? "w-[400px]" : "w-0 border-r-0"
                     )}
                 >
-
-                    <Activity mode={isChatOpen ? "visible" : "hidden"}>
+                    <Activity
+                        mode={isChatOpen ? "visible" : "hidden"}
+                    >
                         <ChatComponent
                         // type="afs"
                         // project_id={project_id}
@@ -219,14 +220,34 @@ export function StepFullAFS({
                         // // clearSelection={clearSelection}
                         />
                     </Activity>
-
+                    <TooltipProvider >
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-0 right-0 h-12 w-12 cursor-pointer rounded-full"
+                                    onClick={() => setIsChatOpen(!isChatOpen)}
+                                >
+                                    {isChatOpen ? (
+                                        <ChevronsLeft className="h-4 w-4" />
+                                    ) : (
+                                        <ChevronsRight className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">
+                                {isChatOpen ? "Hide chat panel" : "Show chat panel"}
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
 
                 {/* Editor/Preview Tabs - fills remaining space */}
                 <div className="h-full flex-1 flex flex-col min-w-0 min-h-0">
                     {/* Sticky Toolbar - Outside the transform container */}
                     <div className="flex flex-row justify-between border-b rounded-2xl">
-                        <TooltipProvider>
+                        <TooltipProvider >
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button
@@ -247,13 +268,6 @@ export function StepFullAFS({
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
-
-                        {/* <StickyLexicalEditorToolbar
-                        onPageUndo={handlePageUndo}
-                        onPageRedo={handlePageRedo}
-                        canPageUndo={canUndo}
-                        canPageRedo={canRedo}
-                    /> */}
                         <EditorToolbar />
 
                         <div className=" items-center justify-between shrink-0">
@@ -280,7 +294,7 @@ export function StepFullAFS({
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider> */}
-                                    <div className="flex items-center gap-1">
+                                    <div className="hidden md:flex items-center gap-1">
                                         <Button
                                             variant="ghost"
                                             size="icon"
