@@ -17,12 +17,11 @@ const afsCoverPage = `
 ## Annual Financial Statements
 ### For the Year Ended December 31, 2024
 
----
+
+
 
 **Registered Company Number:** 12345678  
 **VAT Registration Number:** GB 987 6543 21
-
----
 
 `
 
